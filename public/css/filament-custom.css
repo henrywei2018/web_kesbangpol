@@ -1,0 +1,4 @@
+/* public/css/filament-custom.css */
+.filament-forms-wizard-component {
+    max-width: none; /* This will make the wizard take full available width */
+}
