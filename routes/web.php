@@ -10,6 +10,7 @@ use App\Livewire\PostShow;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Auth\ForgotPassword;
+use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 /*
 |--------------------------------------------------------------------------
@@ -28,13 +29,17 @@ Route::middleware('guest')->group(function () {
 });
 
 // Logout Route
-Route::post('/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect('/login');
-})->middleware('auth')->name('logout');
-
+Route::middleware('auth')->group(function () {
+    // Standard logout
+    Route::post('/logout', LogoutController::class)->name('logout');
+    
+    // Filament admin logout (if Filament tries to use this)
+    Route::post('/admin/logout', LogoutController::class)->name('filament.admin.auth.logout');
+    
+    // Alternative logout routes
+    Route::get('/logout', LogoutController::class)->name('logout.get');
+    Route::get('/admin/logout', LogoutController::class)->name('admin.logout');
+});
 Route::get('/admin/email-verification/verify/{hash}', EmailVerificationController::class)
     ->name('filament.admin.auth.email-verification.verify.custom');
 Route::get('/', App\Livewire\Home::class)->name('beranda');

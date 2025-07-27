@@ -23,10 +23,8 @@ class Register extends Component
     public string $password = '';
     public string $password_confirmation = '';
     
-    // Generated username (not editable by user)
     public string $generated_username = '';
     
-    // OTP verification fields
     public string $otp_code = '';
     public int $timeLeft = 0;
     public bool $canResend = true;

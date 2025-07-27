@@ -51,7 +51,7 @@ class Login extends Component
             $this->successMessage = 'Login berhasil! Mengarahkan ke dashboard...';
             
             // Redirect after success
-            $this->dispatch('redirect-after-delay', url: route('filament.admin.pages.dashboard'), delay: 1500);
+            $this->dispatch('redirect-after-delay', url: route('filament.admin.home'), delay: 1500);
         } else {
             RateLimiter::hit($key, 300); // 5 minutes lockout
             $this->errorMessage = 'Email atau password salah.';
