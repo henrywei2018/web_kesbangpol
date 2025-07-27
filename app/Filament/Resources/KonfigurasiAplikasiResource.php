@@ -23,10 +23,6 @@ class KonfigurasiAplikasiResource extends Resource
     {
         return 'Pengaturan';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Data Umum';
     protected static ?int $navigationSort = 9;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';

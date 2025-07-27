@@ -42,10 +42,6 @@ class SKTDocumentFeedbackResource extends Resource
     {
         return 'Reviu SKT';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Aplikasi';
     protected static ?int $navigationSort = 4; 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';

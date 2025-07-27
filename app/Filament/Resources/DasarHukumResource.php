@@ -21,10 +21,6 @@ class DasarHukumResource extends Resource
     {
         return 'Pengaturan Dasar SPPD';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Data Umum';
     protected static ?int $navigationSort = 13;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';

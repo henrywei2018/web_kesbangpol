@@ -20,10 +20,6 @@ class KodeInstansiResource extends Resource
     {
         return 'Data Instansi';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationIcon = 'heroicon-o-inbox';
     protected static ?string $navigationGroup = 'Data Umum';
     public static function form(Form $form): Form

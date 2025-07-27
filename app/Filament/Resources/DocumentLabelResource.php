@@ -24,10 +24,6 @@ class DocumentLabelResource extends Resource
     {
         return 'Atur Syarat SKL';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Aplikasi';
     protected static ?int $navigationSort = 3;
 

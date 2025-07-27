@@ -19,10 +19,6 @@ class PegawaiResource extends Resource
     {
         return 'Data Pegawai';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Data Umum';
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';

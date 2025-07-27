@@ -62,7 +62,6 @@ class InfographicResource extends Resource
                     ->required(),
             ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table

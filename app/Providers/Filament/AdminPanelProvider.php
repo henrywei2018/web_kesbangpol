@@ -55,10 +55,10 @@ class AdminPanelProvider extends PanelProvider
                      ->icon('heroicon-c-tv'),
                 NavigationGroup::make()
                      ->label('Layanan')
-                     ->icon('heroicon-c-briefcase'),
+                     ->icon('heroicon-o-briefcase'),
                 NavigationGroup::make()
                      ->label('PPID')
-                     ->icon('heroicon-c-briefcase'),
+                     ->icon('heroicon-o-briefcase'),
                 NavigationGroup::make()
                      ->label('Media')
                      ->icon('heroicon-c-photo'),

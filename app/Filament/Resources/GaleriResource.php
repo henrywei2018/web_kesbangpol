@@ -27,10 +27,6 @@ class GaleriResource extends Resource
     {
         return 'Galeri';
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
     protected static ?string $navigationGroup = 'Media';
     protected static ?int $navigationSort = 1;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
