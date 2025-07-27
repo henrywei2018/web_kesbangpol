@@ -75,6 +75,17 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
 
         return true;
     }
+    public function otpVerifications()
+    {
+        return $this->hasMany(OtpVerification::class, 'email', 'email');
+    }
+    public function getLatestOtp(string $type = 'registration')
+    {
+        return $this->otpVerifications()
+                   ->where('type', $type)
+                   ->latest()
+                   ->first();
+    }
 
     public function getFilamentAvatarUrl(): ?string
     {

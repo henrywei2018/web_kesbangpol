@@ -2,9 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Auth\EmailVerification;
-use App\Filament\Pages\Auth\Login;
-use App\Filament\Pages\Auth\RequestPasswordReset;
+
 use App\Livewire\MyProfileExtended;
 use App\Settings\GeneralSettings;
 use Filament\Http\Middleware\Authenticate;
@@ -32,10 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->registration()
-            ->login(Login::class)
-            ->passwordReset(RequestPasswordReset::class)
-            ->emailVerification(EmailVerification::class)
+            ->authGuard('web')
+            ->authPasswordBroker('users')
             ->favicon(fn (GeneralSettings $settings) => Storage::url($settings->site_favicon))
             ->brandName(fn (GeneralSettings $settings) => $settings->brand_name)
             ->brandLogo(fn (GeneralSettings $settings) => Storage::url($settings->brand_logo))

@@ -1,14 +1,15 @@
 <?php
 
-use App\Filament\Pages\Auth\Login;
 use App\Models\Spt;
 use App\Models\SKLDocumentFeedback;
 use App\Livewire\SignaturePad;
 use App\Livewire\SptPdfComponent;
-use App\Filament\Pages\Auth\Register;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\PostIndex;
 use App\Livewire\PostShow;
+use App\Livewire\Auth\Login;
+use App\Livewire\Auth\Register;
+use App\Livewire\Auth\ForgotPassword;
 use App\Http\Controllers\Auth\EmailVerificationController;
 /*
 |--------------------------------------------------------------------------
@@ -20,12 +21,20 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+Route::middleware('guest')->group(function () {
+    Route::get('/login', Login::class)->name('login');
+    Route::get('/register', Register::class)->name('register');
+    Route::get('/forgot-password', ForgotPassword::class)->name('forgot-password');
+});
 
-// Route::get('/', function () {
-//     return view('welcome');
-// //     })->name('welcome'); 
-// Route::get('admin/login', Login::class)->name('login');    
-// Route::get('/admin/register', Register::class)->name('register');
+// Logout Route
+Route::post('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/login');
+})->middleware('auth')->name('logout');
+
 Route::get('/admin/email-verification/verify/{hash}', EmailVerificationController::class)
     ->name('filament.admin.auth.email-verification.verify.custom');
 Route::get('/', App\Livewire\Home::class)->name('beranda');
