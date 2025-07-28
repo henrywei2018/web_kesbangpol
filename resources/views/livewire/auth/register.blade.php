@@ -102,7 +102,7 @@
             </button>
         </div>
 
-        <div class="text-center p-t-136">
+        <div class="text-center p-t-36">
             <a class="txt2" href="{{ route('login') }}">
                 Sudah punya akun? Masuk di sini
                 <i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>

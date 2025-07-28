@@ -89,7 +89,7 @@
                                         <a href="{{ url('/galeri') }}" class="dropdown-item">Galeri</a>
                                     </li>
                                     <li class="dropdown">
-                                        <a href="{{ url('/admin/login') }}"
+                                        <a href="{{ url('/login') }}"
                                             class="dropdown-item btn btn-modern btn-outline btn-arrow-effect-1 anim-hover-translate-right-5px transition-2ms">Masuk/Daftar<i
                                                 class="fas fa-arrow-right ms-2"></i>
                                         </a>
