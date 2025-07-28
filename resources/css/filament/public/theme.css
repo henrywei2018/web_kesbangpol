@@ -1,0 +1,94 @@
+/* resources/css/filament/public/theme.css */
+
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+@config 'tailwind.config.js';
+
+/* Custom styling for public panel */
+:root {
+    --primary: 253, 29, 29; /* Blue-500 */
+    --gray: 71 85 105; /* Slate-600 */
+}
+
+/* Public panel specific customizations */
+.fi-sidebar {
+    --sidebar-width: 16rem; /* Narrower sidebar for public users */
+}
+
+/* Custom branding area */
+.fi-sidebar-header {
+    background: linear-gradient(135deg, rgb(253, 29, 29) 0%, rgb(253, 29, 29) 100%);
+}
+
+/* Navigation styling for public panel */
+.fi-sidebar-nav-item-active {
+    background-color: rgb(253, 29, 29 / 0.1);
+    border-left: 3px solid rgb(253, 29, 29);
+}
+
+/* Dashboard cards styling */
+.fi-stats-card {
+    border: 1px solid rgb(229 231 235);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+/* Custom welcome message styling */
+.welcome-card {
+    background: linear-gradient(135deg, rgb(253, 29, 29 / 0.1) 0%, rgb(37 99 235 / 0.05) 100%);
+    border: 1px solid rgb(253, 29, 29 / 0.2);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Form styling adjustments for public users */
+.fi-form-section {
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+}
+
+/* Table styling for public panel */
+.fi-table {
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* Button customizations */
+.fi-btn-primary {
+    background-color: rgb(253, 29, 29);
+    border-color: rgb(253, 29, 29);
+}
+
+.fi-btn-primary:hover {
+    background-color: rgb(37 99 235);
+    border-color: rgb(37 99 235);
+}
+
+/* Public panel specific badge colors */
+.fi-badge-warning {
+    background-color: rgb(251 191 36 / 0.1);
+    color: rgb(146 64 14);
+}
+
+.fi-badge-success {
+    background-color: rgb(34 197 94 / 0.1);
+    color: rgb(21 128 61);
+}
+
+.fi-badge-danger {
+    background-color: rgb(239 68 68 / 0.1);
+    color: rgb(153 27 27);
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+    .fi-sidebar {
+        --sidebar-width: 100%;
+    }
+    
+    .welcome-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+}

@@ -68,21 +68,18 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     }
 
     public function canAccessPanel(Panel $panel): bool
-    {
-        $role = $this->role;
-
+    {   
         // Admin panel - untuk super_admin, admin, editor
         if ($panel->getId() === 'admin') {
-            return in_array($role, ['super_admin', 'admin', 'editor']) && $this->hasVerifiedEmail();
+            return $this->hasAnyRole(['super_admin', 'admin', 'editor']) && $this->hasVerifiedEmail();
         }
 
         // Public panel - untuk role public
         if ($panel->getId() === 'public') {
-            return $role === 'public' && $this->hasVerifiedEmail();
+            return $this->hasRole('public') && $this->hasVerifiedEmail();
         }
-
-        // Default: hanya cek email verifikasi
-        return $this->hasVerifiedEmail();
+        
+        return false;
     }
 
     public function otpVerifications()
@@ -127,9 +124,37 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
     }
-    public function aduans()
+    public function skls()
     {
-        return $this->hasMany(Aduan::class);
+        return $this->hasMany(SKL::class, 'id_pemohon');
+    }
+
+    /**
+     * Relationship with SKT model  
+     * User can have many SKT submissions
+     */
+    public function skts()
+    {
+        return $this->hasMany(SKT::class, 'id_pemohon');
+    }
+
+
+    /**
+     * Relationship with PermohonanInformasiPublik model
+     * User can have many public information requests
+     */
+    public function permohonanInformasiPubliks()
+    {
+        return $this->hasMany(PermohonanInformasiPublik::class, 'user_id');
+    }
+
+    /**
+     * Relationship with KeberatanInformasiPublik model
+     * User can have many public information objections
+     */
+    public function keberatanInformasiPubliks()
+    {
+        return $this->hasMany(KeberatanInformasiPublik::class, 'user_id');
     }
 
     // Relasi ke komentar (komentar yang ditulis oleh user)
