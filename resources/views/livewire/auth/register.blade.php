@@ -33,27 +33,27 @@
 
     {{-- Registration Form --}}
     @if($currentStep === 'registration')
-        <div class="wrap-input100 validate-input @error('name') has-error @enderror">
-            <input class="input100" type="text" wire:model="name" placeholder="Nama Lengkap">
+        <div class="wrap-input100 validate-input @error('firstname') has-error @enderror">
+            <input class="input100" type="text" wire:model="firstname" placeholder="First Name">
             <span class="focus-input100"></span>
             <span class="symbol-input100">
                 <i class="fa fa-user" aria-hidden="true"></i>
             </span>
         </div>
-        @error('name')
+        @error('firstname')
             <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
                 {{ $message }}
             </div>
         @enderror
 
-        <div class="wrap-input100 validate-input @error('username') has-error @enderror">
-            <input class="input100" type="text" wire:model="username" placeholder="Username">
+        <div class="wrap-input100 validate-input @error('lastname') has-error @enderror">
+            <input class="input100" type="text" wire:model="lastname" placeholder="Last Name">
             <span class="focus-input100"></span>
             <span class="symbol-input100">
                 <i class="fa fa-user-circle" aria-hidden="true"></i>
             </span>
         </div>
-        @error('username')
+        @error('lastname')
             <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
                 {{ $message }}
             </div>

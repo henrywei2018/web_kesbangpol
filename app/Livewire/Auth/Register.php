@@ -23,8 +23,10 @@ class Register extends Component
     public string $password = '';
     public string $password_confirmation = '';
     
+    // Generated username (not editable by user)
     public string $generated_username = '';
     
+    // OTP verification fields
     public string $otp_code = '';
     public int $timeLeft = 0;
     public bool $canResend = true;
@@ -249,7 +251,7 @@ class Register extends Component
                 'no_telepon' => null,
             ]);
 
-            event(new Registered($user));
+            $user->markEmailAsVerified();
             Auth::login($user);
 
             session()->forget(['registration_data', 'otp_email']);
@@ -257,7 +259,7 @@ class Register extends Component
             $this->currentStep = 'success';
             $this->successMessage = 'Registrasi berhasil! Anda akan diarahkan ke dashboard.';
 
-            $this->dispatch('redirect-after-delay', url: route('filament.admin.pages.dashboard'), delay: 3000);
+            $this->dispatch('redirect-after-delay', url: $this->getRedirectUrl(), delay: 3000);
 
         } catch (\Exception $e) {
             $this->errorMessage = 'Terjadi kesalahan saat membuat akun. Silakan coba lagi.';
@@ -313,5 +315,27 @@ class Register extends Component
     {
         return view('livewire.auth.register')
             ->layout('components.layouts.auth');
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        // Try multiple possible redirect URLs in order of preference
+        $possibleRoutes = [
+            'filament.admin.pages.dashboard',
+            'filament.admin.resources.users.index', 
+            'filament.admin.dashboard',
+            'dashboard',
+            'admin.dashboard',
+            'home',
+        ];
+
+        foreach ($possibleRoutes as $routeName) {
+            if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                return route($routeName);
+            }
+        }
+
+        // Fallback to admin path or root
+        return url('/admin') ?: url('/');
     }
 }

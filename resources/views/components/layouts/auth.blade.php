@@ -46,7 +46,7 @@
             justify-content: center;
             align-items: center;
             padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff0707 0%, #ff3232 100%);
         }
 
         .wrap-login100 {
@@ -406,8 +406,8 @@
                     <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#ad1616;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ff1616;stop-opacity:1" />
                             </linearGradient>
                             <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" style="stop-color:#00d2d3;stop-opacity:1" />

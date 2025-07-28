@@ -13,32 +13,41 @@ class OtpService
 {
     protected $expiry = 15; // minutes
 
-    public function generateOtp(string $email, string $type = 'registration', ?string $userId = null): string
+    public function generateOtp(string $email, string $type): string
     {
-        // Generate 6-digit numeric code
         $otp = rand(100000, 999999);
-        
-        // Get or find user if exists
-        $user = $userId ? User::find($userId) : User::where('email', $email)->first();
-        
-        // Clean up old OTPs for this email and type
-        $this->cleanupOldOtps($email, $type);
-        
-        // Create new OTP record
-        OtpVerification::create([
-            'email' => $email,
-            'user_id' => $user?->id,
-            'otp_code' => (string) $otp,
-            'type' => $type,
-            'attempts' => 0,
-            'is_verified' => false,
-            'expires_at' => now()->addMinutes($this->expiry),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
-        
-        return (string) $otp;
+        $now = now();
+        $expiresAt = $now->copy()->addMinutes(15);
+
+        // Cari entri lama yang belum diverifikasi
+        $existing = OtpVerification::where('email', $email)
+            ->where('type', $type)
+            ->where('is_verified', false)
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'otp_code' => $otp,
+                'attempts' => 0,
+                'expires_at' => $expiresAt,
+                'updated_at' => $now,
+            ]);
+        } else {
+            OtpVerification::create([
+                'email' => $email,
+                'type' => $type,
+                'otp_code' => $otp,
+                'attempts' => 0,
+                'is_verified' => false,
+                'expires_at' => $expiresAt,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        }
+
+        return $otp;
     }
+
 
     public function verifyOtp(string $email, string $otp, string $type = 'registration'): bool
     {

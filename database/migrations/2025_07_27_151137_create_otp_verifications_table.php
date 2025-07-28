@@ -26,7 +26,6 @@ return new class extends Migration
             
             // Foreign key constraint (nullable since OTP might be sent before user creation)
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('email')->references('email')->on('users')->onDelete('cascade');
             
             // Indexes for performance
             $table->index(['email', 'type', 'is_verified']);
