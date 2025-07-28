@@ -20,6 +20,7 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Blade;
 
 class PublicPanelProvider extends PanelProvider
 {
@@ -108,5 +109,10 @@ class PublicPanelProvider extends PanelProvider
                         'personal_info' => MyProfileExtended::class,
                     ]),
             ]);
+    }
+    public function boot()
+    {
+        // Register the layout component
+        Blade::component('layouts.public-panel', \App\View\Components\Layouts\PublicPanel::class);
     }
 }
