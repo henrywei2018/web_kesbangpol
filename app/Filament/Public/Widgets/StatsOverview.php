@@ -14,37 +14,79 @@ class StatsOverview extends BaseWidget
     {
         $user = auth()->user();
         
+        // Get total counts
         $totalPermohonan = PermohonanInformasiPublik::where('user_id', $user->id)->count();
         $totalKeberatan = KeberatanInformasiPublik::where('user_id', $user->id)->count();
         
-        $permohonanDisetujui = PermohonanInformasiPublik::where('user_id', $user->id)
-            ->where('latest_status', 'disetujui')
-            ->count();
+        // Get permohonan with their latest status using the morph relationship
+        $permohonanData = PermohonanInformasiPublik::where('user_id', $user->id)
+            ->with(['statuses' => function($query) {
+                $query->latest('created_at')->limit(1);
+            }])
+            ->get();
             
-        $permohonanDiproses = PermohonanInformasiPublik::where('user_id', $user->id)
-            ->whereIn('latest_status', ['pengajuan', 'proses', 'review'])
-            ->count();
+        // Calculate status counts for permohonan
+        $permohonanSelesai = $permohonanData->filter(function($item) {
+            $latestStatus = $item->statuses->first();
+            $status = $latestStatus ? $latestStatus->status : 'Pending';
+            return $status === 'Selesai';
+        })->count();
+        
+        $permohonanDiproses = $permohonanData->filter(function($item) {
+            $latestStatus = $item->statuses->first();
+            $status = $latestStatus ? $latestStatus->status : 'Pending';
+            return in_array($status, ['Pending', 'Diproses']);
+        })->count();
+        
+        // Get keberatan with their latest status
+        $keberatanData = KeberatanInformasiPublik::where('user_id', $user->id)
+            ->with(['statuses' => function($query) {
+                $query->latest('created_at')->limit(1);
+            }])
+            ->get();
+            
+        $keberatanAktif = $keberatanData->filter(function($item) {
+            $latestStatus = $item->statuses->first();
+            $status = $latestStatus ? $latestStatus->status : 'Pending';
+            return in_array($status, ['Pending', 'Diproses']);
+        })->count();
 
         return [
             Stat::make('Total Permohonan', $totalPermohonan)
-                ->description($permohonanDisetujui . ' disetujui')
+                ->description($permohonanSelesai . ' selesai')
                 ->descriptionIcon('heroicon-m-check-circle')
-                ->color('primary'),
+                ->color('primary')
+                ->chart($this->getPermohonanChart()),
                 
             Stat::make('Dalam Proses', $permohonanDiproses)
                 ->description('Menunggu review')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
                 
-            Stat::make('Keberatan Aktif', $totalKeberatan)
-                ->description('Total keberatan')
+            Stat::make('Keberatan Aktif', $keberatanAktif)
+                ->description('Total keberatan: ' . $totalKeberatan)
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color('danger'),
                 
-            Stat::make('Tingkat Persetujuan', $totalPermohonan > 0 ? round(($permohonanDisetujui / $totalPermohonan) * 100) . '%' : '0%')
+            Stat::make('Tingkat Penyelesaian', $totalPermohonan > 0 ? round(($permohonanSelesai / $totalPermohonan) * 100) . '%' : '0%')
                 ->description('Dari total permohonan')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success'),
         ];
+    }
+    
+    private function getPermohonanChart(): array
+    {
+        // Get last 7 days of permohonan data
+        $data = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->startOfDay();
+            $count = PermohonanInformasiPublik::where('user_id', auth()->id())
+                ->whereDate('created_at', $date)
+                ->count();
+            $data[] = $count;
+        }
+        
+        return $data;
     }
 }
