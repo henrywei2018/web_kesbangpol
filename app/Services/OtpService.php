@@ -234,7 +234,7 @@ class OtpService
     public function completePasswordReset(string $email, string $otpCode, string $newPassword): array
     {
         try {
-            // Verify OTP first
+            // Re-verify OTP for extra security
             $otpResult = $this->verifyOtp($email, $otpCode, 'password_reset');
             if (!$otpResult['success']) {
                 return $otpResult;
@@ -260,7 +260,7 @@ class OtpService
 
             return [
                 'success' => true,
-                'message' => 'Password berhasil direset!',
+                'message' => 'Password berhasil direset! Anda akan diarahkan ke halaman login.',
                 'data' => ['user' => $user]
             ];
 
@@ -272,11 +272,12 @@ class OtpService
 
             return [
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mereset password.',
+                'message' => 'Terjadi kesalahan saat mereset password. Silakan coba lagi.',
                 'data' => []
             ];
         }
     }
+    
 
     /**
      * Handle OTP resend
@@ -295,6 +296,104 @@ class OtpService
         }
         
         return $this->sendOtp($email, $type);
+    }
+    public function sendEmailVerification(string $email): array
+    {
+        try {
+            // Check if user exists
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'User tidak ditemukan.',
+                    'data' => []
+                ];
+            }
+
+            // Check if already verified
+            if ($user->hasVerifiedEmail()) {
+                return [
+                    'success' => false,
+                    'message' => 'Email sudah terverifikasi.',
+                    'data' => []
+                ];
+            }
+
+            // Use the existing sendOtp method
+            return $this->sendOtp($email, 'email_verification');
+
+        } catch (\Exception $e) {
+            logger()->error('Email verification send failed', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengirim kode verifikasi.',
+                'data' => []
+            ];
+        }
+    }
+
+    /**
+     * Complete email verification process
+     */
+    public function completeEmailVerification(string $email, string $otpCode): array
+    {
+        try {
+            // Verify OTP
+            $otpResult = $this->verifyOtp($email, $otpCode, 'email_verification');
+            if (!$otpResult['success']) {
+                return $otpResult;
+            }
+
+            // Find user and mark email as verified
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'User tidak ditemukan.',
+                    'data' => []
+                ];
+            }
+
+            // Mark email as verified
+            $user->markEmailAsVerified();
+
+            // Clean up OTP records
+            $this->deleteOtp($email, 'email_verification');
+
+            return [
+                'success' => true,
+                'message' => 'Email berhasil diverifikasi!',
+                'data' => ['user' => $user]
+            ];
+
+        } catch (\Exception $e) {
+            logger()->error('Email verification failed', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memverifikasi email.',
+                'data' => []
+            ];
+        }
+    }
+
+    // Update the getSuccessMessage method to include email verification
+    protected function getSuccessMessage(string $type): string
+    {
+        return match($type) {
+            'registration' => 'Kode verifikasi telah dikirim ke email Anda.',
+            'password_reset' => 'Kode reset password telah dikirim ke email Anda.',
+            'email_verification' => 'Kode verifikasi email telah dikirim ke email Anda.',
+            'login_verification' => 'Kode verifikasi login telah dikirim ke email Anda.',
+            default => 'Kode verifikasi telah dikirim ke email Anda.'
+        };
     }
 
     // ========================================
@@ -406,15 +505,6 @@ class OtpService
         return $username;
     }
 
-    protected function getSuccessMessage(string $type): string
-    {
-        return match($type) {
-            'registration' => 'Kode verifikasi telah dikirim ke email Anda.',
-            'password_reset' => 'Kode reset password telah dikirim ke email Anda.',
-            'login_verification' => 'Kode verifikasi login telah dikirim ke email Anda.',
-            default => 'Kode verifikasi telah dikirim ke email Anda.'
-        };
-    }
 
     protected function getRedirectUrl(User $user): string
     {

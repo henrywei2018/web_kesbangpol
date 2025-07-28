@@ -2,11 +2,8 @@
 
 namespace App\Livewire\Auth;
 
-use App\Models\User;
 use App\Services\OtpService;
 use Livewire\Component;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 
 class ForgotPassword extends Component
@@ -49,44 +46,50 @@ class ForgotPassword extends Component
         return [];
     }
 
+    public function messages()
+    {
+        return [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.exists' => 'Email tidak terdaftar dalam sistem.',
+            'otp_code.required' => 'Kode OTP wajib diisi.',
+            'otp_code.size' => 'Kode OTP harus 6 digit.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+        ];
+    }
+
+    /**
+     * Send reset code - delegate to enhanced OtpService
+     */
     public function sendResetCode()
     {
-        // Rate limiting
-        $key = 'forgot-password:' . request()->ip();
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            $seconds = RateLimiter::availableIn($key);
-            $this->errorMessage = "Terlalu banyak percobaan. Coba lagi dalam {$seconds} detik.";
+        $this->validate();
+
+        $otpService = app(OtpService::class);
+        
+        // Delegate to enhanced service
+        $result = $otpService->sendOtp($this->email, 'password_reset');
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
             return;
         }
 
-        $this->validate();
+        // Store email in session for next steps
+        session(['reset_email' => $this->email]);
 
-        try {
-            // Generate and send OTP
-            $otpService = app(OtpService::class);
-            $otp = $otpService->generateOtp($this->email, 'password_reset');
-            $otpService->sendOtpEmail($this->email, $otp, 'password_reset');
-
-            // Store email in session
-            session(['reset_email' => $this->email]);
-
-            // Move to verification step
-            $this->currentStep = 'verification';
-            $this->timeLeft = $otpService->getRemainingTime($this->email, 'password_reset');
-            $this->successMessage = 'Kode reset password telah dikirim ke email Anda.';
-            $this->errorMessage = '';
-
-            RateLimiter::hit($key, 300);
-
-        } catch (\Exception $e) {
-            $this->errorMessage = 'Terjadi kesalahan saat mengirim kode reset. Silakan coba lagi.';
-            logger()->error('Password reset OTP send failed', [
-                'email' => $this->email,
-                'error' => $e->getMessage()
-            ]);
-        }
+        // Update UI state based on service response
+        $this->currentStep = 'verification';
+        $this->timeLeft = $result['data']['remaining_time'];
+        $this->canResend = $result['data']['can_resend'];
+        $this->successMessage = $result['message'];
+        $this->errorMessage = '';
     }
 
+    /**
+     * Verify reset code - delegate to enhanced OtpService
+     */
     public function verifyResetCode()
     {
         $this->validate();
@@ -100,9 +103,12 @@ class ForgotPassword extends Component
         }
 
         $otpService = app(OtpService::class);
-
-        if (!$otpService->verifyOtp($email, $this->otp_code, 'password_reset')) {
-            $this->errorMessage = 'Kode OTP salah atau sudah kedaluarsa.';
+        
+        // Delegate to enhanced service - just verify, don't complete reset yet
+        $result = $otpService->verifyOtp($email, $this->otp_code, 'password_reset');
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
             $this->otp_code = '';
             return;
         }
@@ -113,6 +119,9 @@ class ForgotPassword extends Component
         $this->errorMessage = '';
     }
 
+    /**
+     * Reset password - delegate to enhanced OtpService
+     */
     public function resetPassword()
     {
         $this->validate();
@@ -125,31 +134,30 @@ class ForgotPassword extends Component
             return;
         }
 
-        try {
-            // Update user password
-            $user = User::where('email', $email)->first();
-            $user->update([
-                'password' => Hash::make($this->password)
-            ]);
-
-            // Clear session data
-            session()->forget('reset_email');
-
-            // Move to success step
-            $this->currentStep = 'success';
-            $this->successMessage = 'Password berhasil direset! Anda akan diarahkan ke halaman login.';
-
-            $this->dispatch('redirect-after-delay', url: route('login'), delay: 3000);
-
-        } catch (\Exception $e) {
-            $this->errorMessage = 'Terjadi kesalahan saat mereset password. Silakan coba lagi.';
-            logger()->error('Password reset failed', [
-                'email' => $email,
-                'error' => $e->getMessage()
-            ]);
+        $otpService = app(OtpService::class);
+        
+        // Delegate complete password reset to enhanced service
+        // Note: We need to re-verify OTP since it's a sensitive operation
+        $result = $otpService->completePasswordReset($email, $this->otp_code, $this->password);
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
+            return;
         }
+
+        // Clear session data
+        session()->forget('reset_email');
+
+        // Move to success step
+        $this->currentStep = 'success';
+        $this->successMessage = $result['message'];
+
+        $this->dispatch('redirect-after-delay', url: route('login'), delay: 3000);
     }
 
+    /**
+     * Resend OTP - delegate to enhanced OtpService
+     */
     public function resendOtp()
     {
         $email = session('reset_email');
@@ -160,20 +168,38 @@ class ForgotPassword extends Component
         }
 
         $otpService = app(OtpService::class);
-
-        if ($otpService->resendOtp($email, 'password_reset')) {
-            $this->timeLeft = $otpService->getRemainingTime($email, 'password_reset');
-            $this->canResend = false;
-            $this->successMessage = 'Kode reset password baru telah dikirim.';
-            $this->errorMessage = '';
-            $this->otp_code = '';
-
-            $this->dispatch('enable-resend-after-delay', delay: 60000);
-        } else {
-            $this->errorMessage = 'Tidak dapat mengirim ulang kode. Silakan tunggu sebentar.';
+        
+        // Delegate to enhanced service
+        $result = $otpService->resendOtp($email, 'password_reset');
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
+            return;
         }
+
+        // Update UI state based on service response
+        $this->timeLeft = $result['data']['remaining_time'];
+        $this->canResend = false;
+        $this->successMessage = $result['message'];
+        $this->errorMessage = '';
+        $this->otp_code = '';
+
+        $this->dispatch('enable-resend-after-delay', delay: 60000);
     }
 
+    /**
+     * Handle OTP timer expiration
+     */
+    public function handleOtpExpired()
+    {
+        $this->canResend = true;
+        $this->timeLeft = 0;
+        $this->errorMessage = 'Kode OTP telah kedaluarsa. Silakan minta kode baru.';
+    }
+
+    /**
+     * Go back to email step
+     */
     public function backToEmail()
     {
         $this->currentStep = 'email';
@@ -182,13 +208,9 @@ class ForgotPassword extends Component
         $this->password_confirmation = '';
         $this->errorMessage = '';
         $this->successMessage = '';
-        session()->forget('reset_email');
-    }
-
-    public function handleOtpExpired()
-    {
+        $this->timeLeft = 0;
         $this->canResend = true;
-        $this->errorMessage = 'Kode OTP telah kedaluarsa. Silakan minta kode baru.';
+        session()->forget('reset_email');
     }
 
     public function render()

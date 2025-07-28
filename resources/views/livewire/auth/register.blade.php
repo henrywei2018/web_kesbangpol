@@ -1,4 +1,4 @@
-<form class="login100-form validate-form" wire:submit="{{ $currentStep === 'registration' ? 'submitRegistration' : 'verifyOtp' }}">
+<form class="login100-form validate-form" wire:submit="{{ $currentStep === 'registration' ? 'register' : 'verifyOtp' }}">
     <span class="login100-form-title">
         @if($currentStep === 'registration')
             Daftar Akun
@@ -102,7 +102,7 @@
             </button>
         </div>
 
-        <div class="text-center p-t-36">
+        <div class="text-center p-t-12">
             <a class="txt2" href="{{ route('login') }}">
                 Sudah punya akun? Masuk di sini
                 <i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
