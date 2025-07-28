@@ -37,7 +37,7 @@ class PublicPanelProvider extends PanelProvider
             ->brandLogo(fn (GeneralSettings $settings) => Storage::url($settings->brand_logo))
             ->brandLogoHeight(fn (GeneralSettings $settings) => $settings->brand_logoHeight)
             ->colors(fn (GeneralSettings $settings) => $settings->site_theme)
-            
+            ->viteTheme('resources/css/filament/public/theme.css')
             // Features - customized for public panel
             ->databaseNotifications()->databaseNotificationsPolling('60s')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
