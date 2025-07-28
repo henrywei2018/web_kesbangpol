@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\SKTResource\Pages;
+namespace App\Filament\Public\Resources\SKTResource\Pages;
 
-use App\Filament\Resources\SKTResource;
+use App\Filament\Public\Resources\SKTResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 

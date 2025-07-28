@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Public\Resources;
 
-use App\Filament\Resources\SKTResource\Pages;
-use App\Filament\Resources\SKTResource\RelationManagers;
+use App\Filament\Public\Resources\SKTResource\Pages;
+use App\Filament\Public\Resources\SKTResource\RelationManagers;
 use App\Models\SKT;
 use App\Models\SKTDocumentLabel;
 use App\Model\Wilayah;

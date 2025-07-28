@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Public\Resources;
 
-use App\Filament\Resources\PermohonanInformasiPublikResource\Pages;
+use App\Filament\Public\Resources\PermohonanInformasiPublikResource\Pages;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\StatusLayanan;
 use Filament\Forms;

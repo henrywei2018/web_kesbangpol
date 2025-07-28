@@ -5,10 +5,6 @@ namespace App\Livewire\Auth;
 use App\Models\User;
 use App\Services\OtpService;
 use Livewire\Component;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
 
@@ -16,7 +12,7 @@ class Register extends Component
 {
     public string $currentStep = 'registration';
     
-    // Simplified registration form fields
+    // Registration form fields
     public string $firstname = '';
     public string $lastname = '';
     public string $email = '';
@@ -113,7 +109,7 @@ class Register extends Component
             
             // Prevent infinite loop
             if ($counter > 9999) {
-                $username = $baseUsername . rand(10000, 99999);
+                $username = $baseUsername . time();
                 break;
             }
         }
@@ -121,87 +117,62 @@ class Register extends Component
         $this->generated_username = $username;
     }
 
-    protected function cleanName(string $name): string
+    private function cleanName(string $name): string
     {
-        // Remove extra spaces and special characters
-        $name = trim($name);
-        $name = preg_replace('/\s+/', '', $name); // Remove all spaces
-        $name = preg_replace('/[^\p{L}]/u', '', $name); // Keep only letters
+        // Remove accents and convert to ASCII
+        $name = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
         
-        // Transliterate non-ASCII characters
-        $name = $this->transliterate($name);
+        // Remove special characters except letters and spaces
+        $name = preg_replace('/[^a-zA-Z\s]/', '', $name);
+        
+        // Replace multiple spaces with single space and trim
+        $name = preg_replace('/\s+/', ' ', trim($name));
         
         return $name;
     }
 
-    protected function transliterate(string $text): string
+    /**
+     * Handle registration form submission - delegate to service
+     */
+    public function register()
     {
-        // Common Indonesian/international name transliterations
-        $transliterations = [
-            'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss',
-            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'å' => 'a',
-            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
-            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
-            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o',
-            'ù' => 'u', 'ú' => 'u', 'û' => 'u',
-            'ñ' => 'n', 'ç' => 'c',
-            // Add more as needed
-        ];
-        
-        return str_replace(array_keys($transliterations), array_values($transliterations), strtolower($text));
-    }
+        // Generate username if not already done
+        $this->generateUsername();
+        $this->validate();
 
-    public function submitRegistration()
-    {
-        $key = 'register:' . request()->ip();
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            $seconds = RateLimiter::availableIn($key);
-            $this->errorMessage = "Terlalu banyak percobaan. Coba lagi dalam {$seconds} detik.";
+        $otpService = app(OtpService::class);
+        
+        // Delegate to service
+        $result = $otpService->sendOtp($this->email, 'registration');
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
             return;
         }
 
-        // Generate username if not already done
-        $this->generateUsername();
-
-        $this->validate();
-
-        // Double-check username uniqueness before proceeding
-        if (User::where('username', $this->generated_username)->exists()) {
-            $this->generateUsername();
-        }
-
-        try {
-            $otpService = app(OtpService::class);
-            $otp = $otpService->generateOtp($this->email, 'registration');
-            $otpService->sendOtpEmail($this->email, $otp, 'registration');
-
-            session([
-                'registration_data' => [
-                    'firstname' => $this->firstname,
-                    'lastname' => $this->lastname,
-                    'username' => $this->generated_username,
-                    'email' => $this->email,
-                    'password' => $this->password,
-                ],
-                'otp_email' => $this->email
-            ]);
-
-            $this->currentStep = 'verification';
-            $this->timeLeft = $otpService->getRemainingTime($this->email, 'registration');
-            $this->successMessage = 'Kode verifikasi telah dikirim ke email Anda.';
-            $this->errorMessage = '';
-
-            RateLimiter::hit($key, 300);
-
-        } catch (\Exception $e) {
-            $this->errorMessage = 'Terjadi kesalahan saat mengirim kode verifikasi. Silakan coba lagi.';
-            logger()->error('Registration OTP send failed', [
+        // Store registration data in session
+        session([
+            'registration_data' => [
+                'firstname' => $this->firstname,
+                'lastname' => $this->lastname,
+                'username' => $this->generated_username,
                 'email' => $this->email,
-                'error' => $e->getMessage()
-            ]);
-        }
+                'password' => $this->password,
+            ],
+            'otp_email' => $this->email
+        ]);
+
+        // Update UI state
+        $this->currentStep = 'verification';
+        $this->timeLeft = $result['data']['remaining_time'];
+        $this->canResend = $result['data']['can_resend'];
+        $this->successMessage = $result['message'];
+        $this->errorMessage = '';
     }
 
+    /**
+     * Handle OTP verification - delegate to service
+     */
     public function verifyOtp()
     {
         $this->validate();
@@ -216,61 +187,31 @@ class Register extends Component
         }
 
         $otpService = app(OtpService::class);
-
-        if (!$otpService->verifyOtp($email, $this->otp_code, 'registration')) {
-            $this->errorMessage = 'Kode OTP salah atau sudah kedaluarsa.';
+        
+        // Delegate complete registration to service
+        $result = $otpService->completeRegistration($registrationData, $email, $this->otp_code);
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
             $this->otp_code = '';
             return;
         }
 
-        try {
-            // Final username uniqueness check before creating user
-            $finalUsername = $registrationData['username'];
-            if (User::where('username', $finalUsername)->exists()) {
-                // Regenerate if someone took it during OTP verification
-                $baseUsername = preg_replace('/\d+$/', '', $finalUsername);
-                $counter = 1;
-                do {
-                    $finalUsername = $baseUsername . $counter;
-                    $counter++;
-                } while (User::where('username', $finalUsername)->exists() && $counter < 10000);
-            }
+        // Clear session data
+        session()->forget(['registration_data', 'otp_email']);
 
-            // Create user account with only required fields
-            $user = User::create([
-                'firstname' => $registrationData['firstname'],
-                'lastname' => $registrationData['lastname'],
-                'username' => $finalUsername,
-                'email' => $registrationData['email'],
-                'password' => Hash::make($registrationData['password']),
-                'email_verified_at' => now(),
-                // Optional fields are set to null by default
-                'no_ktp' => null,
-                'domisili' => null,
-                'alamat' => null,
-                'no_telepon' => null,
-            ]);
+        // Update UI state
+        $this->currentStep = 'success';
+        $this->successMessage = $result['message'];
 
-            $user->markEmailAsVerified();
-            Auth::login($user);
-
-            session()->forget(['registration_data', 'otp_email']);
-
-            $this->currentStep = 'success';
-            $this->successMessage = 'Registrasi berhasil! Anda akan diarahkan ke dashboard.';
-
-            $this->dispatch('redirect-after-delay', url: $this->getRedirectUrl(), delay: 3000);
-
-        } catch (\Exception $e) {
-            $this->errorMessage = 'Terjadi kesalahan saat membuat akun. Silakan coba lagi.';
-            logger()->error('User creation failed', [
-                'email' => $email,
-                'error' => $e->getMessage(),
-                'username' => $finalUsername ?? 'unknown'
-            ]);
-        }
+        // Redirect after delay
+        $redirectUrl = $result['data']['redirect_url'] ?? '/dashboard';
+        $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 3000);
     }
 
+    /**
+     * Handle OTP resend - delegate to service
+     */
     public function resendOtp()
     {
         $email = session('otp_email');
@@ -281,61 +222,56 @@ class Register extends Component
         }
 
         $otpService = app(OtpService::class);
-
-        if ($otpService->resendOtp($email, 'registration')) {
-            $this->timeLeft = $otpService->getRemainingTime($email, 'registration');
-            $this->canResend = false;
-            $this->successMessage = 'Kode verifikasi baru telah dikirim.';
-            $this->errorMessage = '';
-            $this->otp_code = '';
-
-            $this->dispatch('enable-resend-after-delay', delay: 60000);
-        } else {
-            $this->errorMessage = 'Tidak dapat mengirim ulang kode. Silakan tunggu sebentar.';
+        
+        // Delegate to service
+        $result = $otpService->resendOtp($email, 'registration');
+        
+        if (!$result['success']) {
+            $this->errorMessage = $result['message'];
+            return;
         }
-    }
 
-    public function backToRegistration()
-    {
-        $this->currentStep = 'registration';
-        $this->otp_code = '';
+        // Update UI state
+        $this->timeLeft = $result['data']['remaining_time'];
+        $this->canResend = false;
+        $this->successMessage = $result['message'];
         $this->errorMessage = '';
-        $this->successMessage = '';
-        $this->generated_username = '';
-        session()->forget(['registration_data', 'otp_email']);
+        $this->otp_code = '';
+
+        $this->dispatch('enable-resend-after-delay', delay: 60000);
     }
 
+    /**
+     * Handle OTP timer expiration
+     */
     public function handleOtpExpired()
     {
         $this->canResend = true;
-        $this->errorMessage = 'Kode OTP telah kedaluarsa. Silakan minta kode baru.';
+        $this->timeLeft = 0;
+    }
+
+    /**
+     * Go back to registration step
+     */
+    public function backToRegistration()
+    {
+        $this->currentStep = 'registration';
+        $this->errorMessage = '';
+        $this->successMessage = '';
+        $this->otp_code = '';
+        session()->forget(['registration_data', 'otp_email']);
+    }
+
+    /**
+     * Get redirect URL after successful registration
+     */
+    protected function getRedirectUrl(): string
+    {
+        return auth()->user()?->hasRole('super_admin') ? '/admin' : '/panel/';
     }
 
     public function render()
     {
-        return view('livewire.auth.register')
-            ->layout('components.layouts.auth');
-    }
-
-    protected function getRedirectUrl(): string
-    {
-        // Try multiple possible redirect URLs in order of preference
-        $possibleRoutes = [
-            'filament.admin.pages.dashboard',
-            'filament.admin.resources.users.index', 
-            'filament.admin.dashboard',
-            'dashboard',
-            'admin.dashboard',
-            'home',
-        ];
-
-        foreach ($possibleRoutes as $routeName) {
-            if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                return route($routeName);
-            }
-        }
-
-        // Fallback to admin path or root
-        return url('/admin') ?: url('/');
+        return view('livewire.auth.register');
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Public\Resources;
 
-use App\Filament\Resources\KeberatanInformasiPublikResource\Pages;
+use App\Filament\Public\Resources\KeberatanInformasiPublikResource\Pages;
 use App\Models\KeberatanInformasiPublik;
 use Filament\Forms;
 use Filament\Resources\Resource;

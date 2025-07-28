@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Filament\Resources\SKLResource\Pages;
+namespace App\Filament\Public\Resources\SKTResource\Pages;
 
-use App\Filament\Resources\SKLResource;
+use App\Filament\Public\Resources\SKTResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use App\Models\SKL;
-use App\Models\DocumentLabel;
-use App\Models\SKLDocumentFeedback;
+use App\Models\SKT;
+use App\Models\SKTDocumentLabel;
+use App\Models\SKTDocumentFeedback;
 
-class EditSKL extends EditRecord
+class EditSKT extends EditRecord
 {
-    protected static string $resource = SKLResource::class;
+    protected static string $resource = SKTResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -21,30 +21,30 @@ class EditSKL extends EditRecord
     }
     protected function afterSave(): void
 {
-    $skl = $this->record;  // Mendapatkan record SKL yang sedang di-edit
+    $skt = $this->record;  // Mendapatkan record SKL yang sedang di-edit
 
     // Ambil nilai dari form state
     $formState = $this->form->getState();
 
     // Loop melalui setiap label dokumen dan update hanya sanggahan
-    foreach (DocumentLabel::all() as $label) {
+    foreach (SKTDocumentLabel::all() as $label) {
         // Ambil nilai sanggahan dari form state
         $feedbackField = $formState['feedback_' . $label->collection_name] ?? false;  // Defaults to false if not set
         $sanggahanField = $formState['sanggahan_' . $label->collection_name] ?? null;
 
         // Ambil record SKLDocumentFeedback
-        $sanggahanRecord = SKLDocumentFeedback::where('skl_id', $skl->id)
-            ->where('document_label_id', $label->id)
+        $sanggahanRecord = SKTDocumentFeedback::where('skt_id', $skt->id)
+            ->where('skt_document_label_id', $label->id)
             ->first();
 
         // Jika tidak ada sanggahank record, buat record baru
         if (!$sanggahanRecord) {
-            SKLDocumentFeedback::create([
-                'skl_id' => $skl->id,
-                'document_label_id' => $label->id,
+            SKTDocumentFeedback::create([
+                'skt_id' => $skt->id,
+                'skt_document_label_id' => $label->id,
                 'verified' => false,
                 'feedback' => null,
-                'sanggahan' => $sanggahanField,
+                'sanggahan' => null,
             ]);
         } else {
             // Jika ada, update hanya sanggahan, jangan ubah feedback
@@ -53,9 +53,7 @@ class EditSKL extends EditRecord
             ]);
         }
     }
-    $skl->status = 'pengajuan';
-    $skl->save();
+    $skt->status = 'pengajuan';
+    $skt->save();
     }
-    
-
 }

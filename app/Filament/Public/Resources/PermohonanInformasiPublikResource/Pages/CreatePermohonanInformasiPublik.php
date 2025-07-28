@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\PermohonanInformasiPublikResource\Pages;
+namespace App\Filament\Public\Resources\PermohonanInformasiPublikResource\Pages;
 
-use App\Filament\Resources\PermohonanInformasiPublikResource;
+use App\Filament\Public\Resources\PermohonanInformasiPublikResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 

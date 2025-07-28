@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Public\Resources;
 
-use App\Filament\Resources\SKLResource\Pages;
-use App\Filament\Resources\SKLResource\RelationManagers;
+use App\Filament\Public\Resources\SKLResource\Pages;
+use App\Filament\Public\Resources\SKLResource\RelationManagers;
 use App\Models\SKL;
 use App\Models\DocumentLabel;
 use App\Models\SKLDocumentFeedback;
@@ -195,8 +195,5 @@ class SKLResource extends Resource
         // Jika role tidak terdefinisi, bisa mengatur default behavior
         return $query->where('id', -1);  // Tidak menampilkan data jika role tidak cocok
     }
-
-
-
     
 }
