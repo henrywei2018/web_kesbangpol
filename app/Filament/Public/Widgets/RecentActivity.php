@@ -3,8 +3,8 @@
 namespace App\Filament\Public\Widgets;
 
 use Filament\Widgets\Widget;
-use App\Models\PermohonanInformasi;
-use App\Models\KeberatanInformasi;
+use App\Models\PermohonanInformasiPublik;
+use App\Models\KeberatanInformasiPublik;
 
 class RecentActivity extends Widget
 {
@@ -19,7 +19,7 @@ class RecentActivity extends Widget
         $recentActivities = collect();
         
         // Get recent permohonan
-        $permohonanInformasi = PermohonanInformasi::where('user_id', $user->id)
+        $permohonanInformasi = PermohonanInformasiPublik::where('user_id', $user->id)
             ->latest()
             ->take(3)
             ->get();
@@ -36,7 +36,7 @@ class RecentActivity extends Widget
         }
         
         // Get recent keberatan
-        $keberatanInformasi = KeberatanInformasi::where('user_id', $user->id)
+        $keberatanInformasi = KeberatanInformasiPublik::where('user_id', $user->id)
             ->latest()
             ->take(2)
             ->get();

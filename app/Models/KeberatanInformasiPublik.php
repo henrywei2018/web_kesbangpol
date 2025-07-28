@@ -13,7 +13,7 @@ class KeberatanInformasiPublik extends Model implements HasMedia
 {
     use HasFactory; use InteractsWithMedia;
 
-    protected $table = 'keberatan_informasi_publik';
+    protected $table = 'keberatan_informasi';
     
     protected $fillable = [
         'user_id',
