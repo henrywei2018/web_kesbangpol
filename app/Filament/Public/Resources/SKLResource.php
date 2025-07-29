@@ -32,11 +32,12 @@ use Illuminate\Support\Str;
 class SKLResource extends Resource
 {
     protected static ?string $model = SKL::class;
+    protected static ?string $slug = 'lapor-ormas';
     public static function getNavigationLabel(): string
     {
-        return 'Permohonan SKL';
+        return 'Lapor ORMAS';
     }
-    protected static ?string $navigationGroup = 'Layanan';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
     protected static ?int $navigationSort = 3;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 

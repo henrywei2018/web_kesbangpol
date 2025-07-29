@@ -22,6 +22,6 @@ class PublicPanel extends Component
 
     public function render()
     {
-        return view('components.layouts.public-panel');
+        return view('layouts.public-panel');
     }
 }

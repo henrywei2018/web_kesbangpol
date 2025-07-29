@@ -341,7 +341,7 @@ class KeberatanInformasiPublikResource extends Resource
 
         // Jika user memiliki role 'public', batasi query hanya ke aduan milik mereka
         if (auth()->user()->hasRole('public')) {
-            return $query->where('id_pemohon', auth()->user()->id);
+            return $query->where('user_id', auth()->user()->id);
         }
 
         // Jika role tidak terdefinisi, bisa mengatur default behavior

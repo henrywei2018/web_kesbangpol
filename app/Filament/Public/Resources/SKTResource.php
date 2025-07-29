@@ -30,13 +30,14 @@ use Filament\Tables\Columns\IconColumn;
 
 class SKTResource extends Resource
 {
+    protected static ?string $slug = 'daftar-ormas';
     protected static ?string $model = SKT::class;
 
     public static function getNavigationLabel(): string
     {
-        return 'Permohonan SKT';
+        return 'Daftar ORMAS';
     }
-    protected static ?string $navigationGroup = 'Layanan';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
     protected static ?int $navigationSort = 3;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 

@@ -5,6 +5,7 @@ namespace App\Filament\Public\Widgets;
 use Filament\Widgets\Widget;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\KeberatanInformasiPublik;
+use Illuminate\Support\Str;
 
 class RecentActivity extends Widget
 {
@@ -18,35 +19,49 @@ class RecentActivity extends Widget
         
         $recentActivities = collect();
         
-        // Get recent permohonan
+        // Get recent permohonan with their latest status
         $permohonanInformasi = PermohonanInformasiPublik::where('user_id', $user->id)
+            ->with(['statuses' => function($query) {
+                $query->latest('created_at')->limit(1);
+            }])
             ->latest()
             ->take(3)
             ->get();
             
         foreach ($permohonanInformasi as $permohonan) {
+            $latestStatus = $permohonan->statuses->first();
+            $status = $latestStatus ? $latestStatus->status : 'Pending';
+            $statusDescription = $latestStatus ? $latestStatus->deskripsi_status : 'Belum ada deskripsi';
+            
             $recentActivities->push([
                 'type' => 'permohonan',
-                'title' => 'Permohonan Informasi #' . $permohonan->id,
-                'description' => Str::limit($permohonan->rincian_informasi, 50),
-                'status' => $permohonan->latest_status ?? 'pengajuan',
+                'title' => 'Permohonan Informasi #' . ($permohonan->nomor_register ?? $permohonan->id),
+                'description' => Str::limit($statusDescription, 50),
+                'status' => $status,
                 'date' => $permohonan->updated_at,
                 'url' => route('filament.public.resources.permohonan-informasi-publiks.view', $permohonan->id)
             ]);
         }
         
-        // Get recent keberatan
+        // Get recent keberatan with their latest status
         $keberatanInformasi = KeberatanInformasiPublik::where('user_id', $user->id)
+            ->with(['statuses' => function($query) {
+                $query->latest('created_at')->limit(1);
+            }])
             ->latest()
             ->take(2)
             ->get();
             
         foreach ($keberatanInformasi as $keberatan) {
+            $latestStatus = $keberatan->statuses->first();
+            $status = $latestStatus ? $latestStatus->status : 'Pending';
+            $statusDescription = $latestStatus ? $latestStatus->deskripsi_status : 'Belum ada deskripsi';
+            
             $recentActivities->push([
                 'type' => 'keberatan',
-                'title' => 'Keberatan Informasi #' . $keberatan->id,
-                'description' => Str::limit($keberatan->alasan_keberatan, 50),
-                'status' => $keberatan->latest_status ?? 'pengajuan',
+                'title' => 'Keberatan Informasi #' . ($keberatan->nomor_registrasi ?? $keberatan->id),
+                'description' => Str::limit($statusDescription, 50),
+                'status' => $status,
                 'date' => $keberatan->updated_at,
                 'url' => route('filament.public.resources.keberatan-informasi-publiks.view', $keberatan->id)
             ]);

@@ -12,41 +12,58 @@ class SKTPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_skt');
+        return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
     public function view(User $user, SKT $model): bool
     {
-        return $user->can('view_skt');
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+        
+        if ($user->hasRole('public')) {
+            return $model->id_pemohon === $user->id;
+        }
+        
+        return $user->hasAnyRole(['admin', 'editor']);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create_skt');
+        return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
     public function update(User $user, SKT $model): bool
     {
-        return $user->can('update_skt');
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+        
+        if ($user->hasRole('public')) {
+            return $model->id_pemohon === $user->id && 
+                   in_array($model->status, ['pengajuan', 'perbaikan']);
+        }
+        
+        return $user->hasAnyRole(['admin', 'editor']);
     }
 
     public function delete(User $user, SKT $model): bool
     {
-        return $user->can('delete_skt');
+        return $user->hasRole('super_admin');
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_skt');
+        return $user->hasRole('super_admin');
     }
 
     public function restore(User $user, SKT $model): bool
     {
-        return $user->can('restore_skt');
+        return $user->hasRole('super_admin');
     }
 
     public function forceDelete(User $user, SKT $model): bool
     {
-        return $user->can('force_delete_skt');
+        return $user->hasRole('super_admin');
     }
 }

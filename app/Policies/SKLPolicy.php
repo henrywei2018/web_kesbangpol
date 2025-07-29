@@ -12,41 +12,68 @@ class SKLPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_skl');
+        // Allow access for super_admin, admin, editor, and public users
+        return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
     public function view(User $user, SKL $model): bool
     {
-        return $user->can('view_skl');
+        // Super admin can view all
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+        
+        // Public users can only view their own records
+        if ($user->hasRole('public')) {
+            return $model->id_pemohon === $user->id;
+        }
+        
+        // Admin and editor can view all
+        return $user->hasAnyRole(['admin', 'editor']);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create_skl');
+        // All authenticated users can create
+        return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
     public function update(User $user, SKL $model): bool
     {
-        return $user->can('update_skl');
+        // Super admin can update all
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+        
+        // Public users can only update their own records if status allows
+        if ($user->hasRole('public')) {
+            // Only allow updates if status is 'pengajuan' or 'perbaikan'
+            return $model->id_pemohon === $user->id && 
+                   in_array($model->status, ['pengajuan', 'perbaikan']);
+        }
+        
+        // Admin and editor can update all
+        return $user->hasAnyRole(['admin', 'editor']);
     }
 
     public function delete(User $user, SKL $model): bool
     {
-        return $user->can('delete_skl');
+        // Only super admin can delete
+        return $user->hasRole('super_admin');
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_skl');
+        return $user->hasRole('super_admin');
     }
 
     public function restore(User $user, SKL $model): bool
     {
-        return $user->can('restore_skl');
+        return $user->hasRole('super_admin');
     }
 
     public function forceDelete(User $user, SKL $model): bool
     {
-        return $user->can('force_delete_skl');
+        return $user->hasRole('super_admin');
     }
 }

@@ -3,10 +3,10 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\PermohonanInformasiPublik;
+use App\Models\LaporATHG;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class PermohonanInformasiPublikPolicy
+class LaporATHGPolicy
 {
     use HandlesAuthorization;
 
@@ -16,7 +16,7 @@ class PermohonanInformasiPublikPolicy
         return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
-    public function view(User $user, PermohonanInformasiPublik $model): bool
+    public function view(User $user, LaporATHG $model): bool
     {
         // Super admin can view all
         if ($user->hasRole('super_admin')) {
@@ -25,7 +25,7 @@ class PermohonanInformasiPublikPolicy
         
         // Public users can only view their own records
         if ($user->hasRole('public')) {
-            return $model->user_id === $user->id;
+            return $model->id_pemohon === $user->id;
         }
         
         // Admin and editor can view all
@@ -38,7 +38,7 @@ class PermohonanInformasiPublikPolicy
         return $user->hasAnyRole(['super_admin', 'admin', 'editor', 'public']);
     }
 
-    public function update(User $user, PermohonanInformasiPublik $model): bool
+    public function update(User $user, LaporATHG $model): bool
     {
         // Super admin can update all
         if ($user->hasRole('super_admin')) {
@@ -47,18 +47,16 @@ class PermohonanInformasiPublikPolicy
         
         // Public users can only update their own records if status allows
         if ($user->hasRole('public')) {
-            $latestStatus = $model->statuses()->latest()->first();
-            $status = $latestStatus ? $latestStatus->status : 'Pending';
-            
-            // Only allow updates if status is Pending
-            return $model->user_id === $user->id && $status === 'Pending';
+            // Only allow updates if status is 'pengajuan' or 'perbaikan'
+            return $model->id_pemohon === $user->id && 
+                   in_array($model->status, ['pengajuan', 'perbaikan']);
         }
         
         // Admin and editor can update all
         return $user->hasAnyRole(['admin', 'editor']);
     }
 
-    public function delete(User $user, PermohonanInformasiPublik $model): bool
+    public function delete(User $user, LaporATHG $model): bool
     {
         // Only super admin can delete
         return $user->hasRole('super_admin');
@@ -69,12 +67,12 @@ class PermohonanInformasiPublikPolicy
         return $user->hasRole('super_admin');
     }
 
-    public function restore(User $user, PermohonanInformasiPublik $model): bool
+    public function restore(User $user, LaporATHG $model): bool
     {
         return $user->hasRole('super_admin');
     }
 
-    public function forceDelete(User $user, PermohonanInformasiPublik $model): bool
+    public function forceDelete(User $user, LaporATHG $model): bool
     {
         return $user->hasRole('super_admin');
     }

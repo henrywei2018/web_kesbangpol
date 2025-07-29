@@ -1,4 +1,3 @@
-
 <x-layouts.public-panel :pageTitle="'Dashboard'" :pageSubtitle="'Kelola permohonan dan keberatan informasi publik Anda'">
     <div class="space-y-6">
         <!-- Welcome Card -->
@@ -123,9 +122,9 @@
                             @foreach($recent_activities as $activity)
                                 <div class="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                     <div class="flex-shrink-0 w-2 h-2 rounded-full mt-2
-                                        @if($activity['status'] === 'disetujui' || $activity['status'] === 'selesai') bg-theme-success
-                                        @elseif($activity['status'] === 'ditolak') bg-theme-danger
-                                        @elseif(in_array($activity['status'], ['proses', 'review'])) bg-theme-warning
+                                        @if($activity['status'] === 'Selesai') bg-theme-success
+                                        @elseif($activity['status'] === 'Ditolak') bg-theme-danger
+                                        @elseif($activity['status'] === 'Diproses') bg-theme-warning
                                         @else bg-theme-info
                                         @endif">
                                     </div>
@@ -137,9 +136,19 @@
                                             {{ $activity['description'] }}
                                         </p>
                                         <div class="flex items-center justify-between mt-2">
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                {{ $activity['date']->diffForHumans() }}
-                                            </p>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                    @if($activity['status'] === 'Selesai') bg-theme-success-light text-theme-success
+                                                    @elseif($activity['status'] === 'Ditolak') bg-theme-danger-light text-theme-danger
+                                                    @elseif($activity['status'] === 'Diproses') bg-theme-warning-light text-theme-warning
+                                                    @else bg-theme-info-light text-theme-info
+                                                    @endif">
+                                                    {{ $activity['status'] }}
+                                                </span>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ $activity['date']->diffForHumans() }}
+                                                </p>
+                                            </div>
                                             <a href="{{ $activity['url'] }}" 
                                                class="text-xs text-theme-primary hover:underline">
                                                 Lihat Detail
