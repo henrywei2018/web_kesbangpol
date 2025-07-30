@@ -195,9 +195,9 @@
                             <span class="text-sm font-medium text-gray-900 dark:text-white text-center">Update Profil</span>
                         </a>
                         
-                        <a href="#" 
+                        <a href="panel/lapor-a-t-h-gs" 
                            class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg hover:border-theme-success hover:bg-theme-success-light dark:hover:bg-theme-success-light/50 transition-all group">
-                            <i data-lucide="download" class="w-8 h-8 text-theme-success mb-2 group-hover:scale-110 transition-transform"></i>
+                            <i data-lucide="shield" class="w-8 h-8 text-theme-success mb-2 group-hover:scale-110 transition-transform"></i>
                             <span class="text-sm font-medium text-gray-900 dark:text-white text-center">Unduh Dokumen</span>
                         </a>
                     </div>

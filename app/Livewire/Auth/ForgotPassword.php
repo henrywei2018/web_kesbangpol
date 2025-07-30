@@ -18,9 +18,11 @@ class ForgotPassword extends Component
     public int $timeLeft = 0;
     public bool $canResend = true;
     
-    // Password reset
+    // Password reset with show/hide functionality
     public string $password = '';
     public string $password_confirmation = '';
+    public bool $showPassword = false;
+    public bool $showPasswordConfirmation = false;
     
     public string $errorMessage = '';
     public string $successMessage = '';
@@ -57,6 +59,18 @@ class ForgotPassword extends Component
             'password.required' => 'Password baru wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ];
+    }
+
+    // Toggle password visibility
+    public function togglePasswordVisibility()
+    {
+        $this->showPassword = !$this->showPassword;
+    }
+
+    // Toggle password confirmation visibility
+    public function togglePasswordConfirmationVisibility()
+    {
+        $this->showPasswordConfirmation = !$this->showPasswordConfirmation;
     }
 
     /**
@@ -137,7 +151,6 @@ class ForgotPassword extends Component
         $otpService = app(OtpService::class);
         
         // Delegate complete password reset to enhanced service
-        // Note: We need to re-verify OTP since it's a sensitive operation
         $result = $otpService->completePasswordReset($email, $this->otp_code, $this->password);
         
         if (!$result['success']) {
@@ -160,6 +173,10 @@ class ForgotPassword extends Component
      */
     public function resendOtp()
     {
+        if (!$this->canResend) {
+            return;
+        }
+
         $email = session('reset_email');
         
         if (!$email) {
@@ -170,7 +187,7 @@ class ForgotPassword extends Component
         $otpService = app(OtpService::class);
         
         // Delegate to enhanced service
-        $result = $otpService->resendOtp($email, 'password_reset');
+        $result = $otpService->sendOtp($email, 'password_reset');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
@@ -179,12 +196,10 @@ class ForgotPassword extends Component
 
         // Update UI state based on service response
         $this->timeLeft = $result['data']['remaining_time'];
-        $this->canResend = false;
+        $this->canResend = $result['data']['can_resend'];
         $this->successMessage = $result['message'];
         $this->errorMessage = '';
         $this->otp_code = '';
-
-        $this->dispatch('enable-resend-after-delay', delay: 60000);
     }
 
     /**
@@ -194,7 +209,6 @@ class ForgotPassword extends Component
     {
         $this->canResend = true;
         $this->timeLeft = 0;
-        $this->errorMessage = 'Kode OTP telah kedaluarsa. Silakan minta kode baru.';
     }
 
     /**

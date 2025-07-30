@@ -96,13 +96,13 @@ $user = auth()->user();
                 <span>Dashboard</span>
             </a>
             
-            <a href="{{ route('filament.public.resources.permohonan-informasi-publiks.index') }}" 
+            <a href="{{ route('filament.public.resources.permohonan-informasi.index') }}" 
                class="nav-theme-item {{ request()->routeIs('filament.public.resources.permohonan-informasi-publiks.*') ? 'active' : '' }}">
                 <i data-lucide="file-text" class="w-5 h-5 mr-3"></i>
                 <span>Permohonan Informasi</span>
             </a>
             
-            <a href="{{ route('filament.public.resources.keberatan-informasi-publiks.index') }}" 
+            <a href="{{ route('filament.public.resources.keberatan-informasi.index') }}" 
                class="nav-theme-item {{ request()->routeIs('filament.public.resources.keberatan-informasi-publiks.*') ? 'active' : '' }}">
                 <i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i>
                 <span>Keberatan Informasi</span>

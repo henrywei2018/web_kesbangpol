@@ -1,5 +1,5 @@
 <x-filament-widgets::widget>
-    <div class="fi-wi-welcome-card relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 rounded-xl p-6 text-white">
+    <div class="fi-wi-welcome-card relative overflow-hidden bg-gradient-to-r from-red-600 to-amber-700 dark:from-red-700 dark:to-amber-800 rounded-xl p-6 text-white">
         <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-10">
             <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
