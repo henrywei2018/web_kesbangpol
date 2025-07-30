@@ -46,7 +46,7 @@
             justify-content: center;
             align-items: center;
             padding: 15px;
-            background: linear-gradient(135deg, #ff0707 0%, #ff3232 100%);
+            background: linear-gradient(135deg, #ff0707 0%, #fc1b1b 100%);
         }
 
         .wrap-login100 {
@@ -401,59 +401,65 @@
     <div class="limiter">
         <div class="container-login100">
             <div class="wrap-login100">
-                <div class="login100-pic js-tilt animate__animated animate__fadeInLeft">
-                    <!-- Using a beautiful SVG illustration instead of local image -->
-                    <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#ad1616;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#ff1616;stop-opacity:1" />
-                            </linearGradient>
-                            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#00d2d3;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#54a0ff;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        
-                        <!-- Background circles -->
-                        <circle cx="320" cy="80" r="60" fill="url(#gradient1)" opacity="0.1"/>
-                        <circle cx="80" cy="220" r="40" fill="url(#gradient2)" opacity="0.1"/>
-                        
-                        <!-- Main illustration -->
-                        <rect x="120" y="100" width="160" height="120" rx="20" fill="url(#gradient1)" opacity="0.8"/>
-                        
-                        <!-- Screen -->
-                        <rect x="130" y="110" width="140" height="80" rx="10" fill="white"/>
-                        
-                        <!-- Screen content -->
-                        <rect x="140" y="120" width="80" height="8" rx="4" fill="#e0e0e0"/>
-                        <rect x="140" y="135" width="120" height="8" rx="4" fill="#e0e0e0"/>
-                        <rect x="140" y="150" width="60" height="8" rx="4" fill="#e0e0e0"/>
-                        
-                        <!-- Button -->
-                        <rect x="140" y="165" width="60" height="20" rx="10" fill="url(#gradient2)"/>
-                        
-                        <!-- Keyboard -->
-                        <rect x="125" y="235" width="150" height="40" rx="8" fill="#f8f9fa"/>
-                        <rect x="135" y="245" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="160" y="245" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="185" y="245" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="210" y="245" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="235" y="245" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        
-                        <rect x="135" y="258" width="30" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="170" y="258" width="80" height="8" rx="2" fill="#e0e0e0"/>
-                        <rect x="255" y="258" width="20" height="8" rx="2" fill="#e0e0e0"/>
-                        
-                        <!-- Security icons -->
-                        <circle cx="60" cy="120" r="25" fill="url(#gradient2)" opacity="0.9"/>
-                        <path d="M50 120 L55 125 L70 110" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-                        
-                        <circle cx="340" cy="200" r="20" fill="url(#gradient1)" opacity="0.9"/>
-                        <rect x="335" y="195" width="10" height="12" fill="white" rx="2"/>
-                        <circle cx="340" cy="190" r="3" stroke="white" stroke-width="2" fill="none"/>
-                    </svg>
-                </div>
+                <div class="login100-pic js-tilt animate__animated animate__fadeInLeft" 
+     style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 400px;">
+    @php
+        use App\Settings\GeneralSettings;
+        $generalSettings = app(GeneralSettings::class);
+        $logoUrl = $generalSettings->brand_logo ? Storage::url($generalSettings->brand_logo) : null;
+        $brandName = $generalSettings->brand_name ?? config('app.name');
+    @endphp
+
+    <div style="text-align: center; max-width: 100%;">
+        @if($logoUrl)
+            <!-- Dynamic Logo from General Settings -->
+            <img src="{{ $logoUrl }}" 
+                 alt="{{ $brandName }} Logo" 
+                 style="max-height: 800px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;"
+                 class="animate__animated animate__pulse">
+        @else
+            <!-- Fallback: Default Settings Icon SVG when no logo is set -->
+            <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" 
+                 style="max-height: {{ $logoHeight }}; max-width: 100%; display: block; margin: 0 auto;">
+                <defs>
+                    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                
+                <!-- Background decorative elements -->
+                <circle cx="80" cy="60" r="30" fill="url(#gradient2)" opacity="0.1"/>
+                <circle cx="320" cy="80" r="25" fill="url(#gradient1)" opacity="0.1"/>
+                
+                <!-- Main settings gear -->
+                <g transform="translate(200,150)">
+                    <path d="M-30,-50 L-15,-55 L-15,-45 L-30,-40 
+                             L-40,-30 L-45,-15 L-55,-15 L-50,-30
+                             L-40,30 L-45,15 L-55,15 L-50,30
+                             L-30,50 L-15,55 L-15,45 L-30,40
+                             L30,50 L15,55 L15,45 L30,40
+                             L40,30 L45,15 L55,15 L50,30
+                             L40,-30 L45,-15 L55,-15 L50,-30
+                             L30,-50 L15,-55 L15,-45 L30,-40 Z" 
+                          fill="url(#gradient1)"/>
+                    <circle cx="0" cy="0" r="35" fill="white"/>
+                    <circle cx="0" cy="0" r="12" fill="url(#gradient1)"/>
+                </g>
+                
+                <!-- Brand name below -->
+                <text x="200" y="250" text-anchor="middle" fill="url(#gradient1)" 
+                      font-family="Arial, sans-serif" font-size="18" font-weight="bold">
+                    {{ $brandName }}
+                </text>
+            </svg>
+        @endif
+    </div>
+</div>
 
                 {{ $slot }}
             </div>

@@ -23,6 +23,10 @@ class Register extends Component
     // Generated username (not editable by user)
     public string $generated_username = '';
     
+    // Password visibility states
+    public bool $showPassword = false;
+    public bool $showPasswordConfirmation = false;
+    
     // OTP verification fields
     public string $otp_code = '';
     public int $timeLeft = 0;
@@ -40,7 +44,7 @@ class Register extends Component
                 'lastname' => 'required|string|max:255|regex:/^[\p{L}\s\-\'\.]+$/u',
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => ['required', 'confirmed', Password::defaults()],
-                'no_telepon' => ['required', 'regex:/^\+628[1-9][0-9]{6,11}$/'],
+                'no_telepon' => ['required', 'regex:/^(\+628[1-9][0-9]{6,11}|08[1-9][0-9]{6,11})$/'],
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -64,10 +68,28 @@ class Register extends Component
             'password.required' => 'Password wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
             'no_telepon.required' => 'Nomor HP wajib diisi.',
-            'no_telepon.regex' => 'Nomor HP harus dalam format internasional, contoh: +6281234567890',
+            'no_telepon.regex' => 'Nomor HP harus berformat Indonesia. Contoh: 081234567890 atau +6281234567890',
             'otp_code.required' => 'Kode OTP wajib diisi.',
             'otp_code.size' => 'Kode OTP harus 6 digit.',
         ];
+    }
+
+    // Toggle password visibility
+    public function togglePasswordVisibility()
+    {
+        $this->showPassword = !$this->showPassword;
+    }
+
+    // Toggle password confirmation visibility
+    public function togglePasswordConfirmationVisibility()
+    {
+        $this->showPasswordConfirmation = !$this->showPasswordConfirmation;
+    }
+
+    // Auto-normalize phone number when updated
+    public function updatedNoTelepon()
+    {
+        $this->no_telepon = $this->normalizePhoneNumber($this->no_telepon);
     }
 
     // Generate username when firstname or lastname changes
@@ -134,6 +156,7 @@ class Register extends Component
         
         return $name;
     }
+
     protected function normalizePhoneNumber(string $phone): string
     {
         // Hapus spasi, tanda baca, dan karakter tidak valid
@@ -152,7 +175,6 @@ class Register extends Component
         return $phone;
     }
 
-
     /**
      * Handle registration form submission - delegate to service
      */
@@ -162,7 +184,6 @@ class Register extends Component
         $this->generateUsername();
         $this->validate();
         $normalizedPhone = $this->normalizePhoneNumber($this->no_telepon);
-
 
         $otpService = app(OtpService::class);
         
@@ -230,40 +251,54 @@ class Register extends Component
         $this->successMessage = $result['message'];
 
         // Redirect after delay
-        $redirectUrl = $result['data']['redirect_url'] ?? '/dashboard';
+        $redirectUrl = $result['data']['redirect_url'] ?? route('dashboard');
         $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 3000);
     }
 
     /**
-     * Handle OTP resend - delegate to service
+     * Resend OTP
      */
     public function resendOtp()
     {
+        if (!$this->canResend) {
+            return;
+        }
+
         $email = session('otp_email');
-        
         if (!$email) {
-            $this->errorMessage = 'Data email tidak ditemukan.';
+            $this->errorMessage = 'Email tidak ditemukan. Silakan mulai ulang registrasi.';
             return;
         }
 
         $otpService = app(OtpService::class);
-        
-        // Delegate to service
-        $result = $otpService->resendOtp($email, 'registration');
+        $result = $otpService->sendOtp($email, 'registration');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
             return;
         }
 
-        // Update UI state
         $this->timeLeft = $result['data']['remaining_time'];
-        $this->canResend = false;
+        $this->canResend = $result['data']['can_resend'];
         $this->successMessage = $result['message'];
         $this->errorMessage = '';
-        $this->otp_code = '';
+    }
 
-        $this->dispatch('enable-resend-after-delay', delay: 60000);
+    /**
+     * Back to registration form
+     */
+    public function backToRegistration()
+    {
+        // Clear session data
+        session()->forget(['registration_data', 'otp_email']);
+        
+        // Reset component state
+        $this->currentStep = 'registration';
+        $this->otp_code = '';
+        $this->timeLeft = 0;
+        $this->canResend = true;
+        $this->errorMessage = '';
+        $this->successMessage = '';
     }
 
     /**
@@ -273,26 +308,6 @@ class Register extends Component
     {
         $this->canResend = true;
         $this->timeLeft = 0;
-    }
-
-    /**
-     * Go back to registration step
-     */
-    public function backToRegistration()
-    {
-        $this->currentStep = 'registration';
-        $this->errorMessage = '';
-        $this->successMessage = '';
-        $this->otp_code = '';
-        session()->forget(['registration_data', 'otp_email']);
-    }
-
-    /**
-     * Get redirect URL after successful registration
-     */
-    protected function getRedirectUrl(): string
-    {
-        return auth()->user()?->hasRole('super_admin') ? '/admin' : '/panel/';
     }
 
     public function render()
