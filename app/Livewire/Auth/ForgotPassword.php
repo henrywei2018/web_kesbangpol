@@ -3,11 +3,14 @@
 namespace App\Livewire\Auth;
 
 use App\Services\OtpService;
+use App\Traits\HasTurnstile;
 use Livewire\Component;
 use Illuminate\Validation\Rules\Password;
 
 class ForgotPassword extends Component
 {
+    use HasTurnstile;
+
     public string $currentStep = 'email';
     
     // Email form
@@ -34,6 +37,7 @@ class ForgotPassword extends Component
         if ($this->currentStep === 'email') {
             return [
                 'email' => 'required|email|exists:users,email',
+                'turnstileResponse' => app()->environment('local') ? '' : 'required',
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -58,6 +62,7 @@ class ForgotPassword extends Component
             'otp_code.size' => 'Kode OTP harus 6 digit.',
             'password.required' => 'Password baru wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'turnstileResponse.required' => 'Harap selesaikan verifikasi keamanan.',
         ];
     }
 
@@ -74,11 +79,16 @@ class ForgotPassword extends Component
     }
 
     /**
-     * Send reset code - delegate to enhanced OtpService
+     * Send reset code with Turnstile validation
      */
     public function sendResetCode()
     {
         $this->validate();
+
+        // Validate Turnstile
+        if (!$this->validateTurnstile()) {
+            return;
+        }
 
         $otpService = app(OtpService::class);
         
@@ -87,6 +97,7 @@ class ForgotPassword extends Component
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
+            $this->resetTurnstile(); // Reset Turnstile on error
             return;
         }
 
@@ -224,12 +235,14 @@ class ForgotPassword extends Component
         $this->successMessage = '';
         $this->timeLeft = 0;
         $this->canResend = true;
+        $this->resetTurnstile(); // Reset Turnstile when going back
         session()->forget('reset_email');
     }
 
     public function render()
     {
-        return view('livewire.auth.forgot-password')
-            ->layout('components.layouts.auth');
+        return view('livewire.auth.forgot-password', [
+            'siteKey' => $this->getTurnstileSiteKey(),
+        ])->layout('components.layouts.auth');
     }
 }

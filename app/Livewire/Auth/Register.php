@@ -3,13 +3,17 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
+use App\Services\AuthService;
 use App\Services\OtpService;
+use App\Traits\HasTurnstile;
 use Livewire\Component;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
 
 class Register extends Component
 {
+    use HasTurnstile;
+
     public string $currentStep = 'registration';
     
     // Registration form fields
@@ -45,6 +49,7 @@ class Register extends Component
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => ['required', 'confirmed', Password::defaults()],
                 'no_telepon' => ['required', 'regex:/^(\+628[1-9][0-9]{6,11}|08[1-9][0-9]{6,11})$/'],
+                'turnstileResponse' => app()->environment('local') ? '' : 'required',
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -71,6 +76,7 @@ class Register extends Component
             'no_telepon.regex' => 'Nomor HP harus berformat Indonesia. Contoh: 081234567890 atau +6281234567890',
             'otp_code.required' => 'Kode OTP wajib diisi.',
             'otp_code.size' => 'Kode OTP harus 6 digit.',
+            'turnstileResponse.required' => 'Harap selesaikan verifikasi keamanan.',
         ];
     }
 
@@ -176,13 +182,19 @@ class Register extends Component
     }
 
     /**
-     * Handle registration form submission - delegate to service
+     * Handle registration form submission with Turnstile
      */
     public function register()
     {
         // Generate username if not already done
         $this->generateUsername();
         $this->validate();
+
+        // Validate Turnstile
+        if (!$this->validateTurnstile()) {
+            return;
+        }
+
         $normalizedPhone = $this->normalizePhoneNumber($this->no_telepon);
 
         $otpService = app(OtpService::class);
@@ -192,6 +204,7 @@ class Register extends Component
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
+            $this->resetTurnstile(); // Reset Turnstile on error
             return;
         }
 
@@ -251,7 +264,8 @@ class Register extends Component
         $this->successMessage = $result['message'];
 
         // Redirect after delay
-        $redirectUrl = $result['data']['redirect_url'] ?? route('dashboard');
+        $authService = app(AuthService::class);
+        $redirectUrl = $authService->getDashboardUrl(auth()->user());
         $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 3000);
     }
 
@@ -266,7 +280,7 @@ class Register extends Component
 
         $email = session('otp_email');
         if (!$email) {
-            $this->errorMessage = 'Email tidak ditemukan. Silakan mulai ulang registrasi.';
+            $this->errorMessage = 'Data email tidak ditemukan. Silakan mulai ulang registrasi.';
             return;
         }
 
@@ -299,6 +313,7 @@ class Register extends Component
         $this->canResend = true;
         $this->errorMessage = '';
         $this->successMessage = '';
+        $this->resetTurnstile(); // Reset Turnstile when going back
     }
 
     /**
@@ -312,6 +327,8 @@ class Register extends Component
 
     public function render()
     {
-        return view('livewire.auth.register')->layout('components.layouts.auth');
+        return view('livewire.auth.register', [
+            'siteKey' => $this->getTurnstileSiteKey(),
+        ])->layout('components.layouts.auth');
     }
 }

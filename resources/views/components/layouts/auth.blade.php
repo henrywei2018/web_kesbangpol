@@ -188,7 +188,7 @@
         }
 
         .wrap-login100 {
-            width: 960px;
+            width: 720px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 20px;
@@ -243,7 +243,7 @@
             display: block;
             padding-bottom: 30px; /* Reduced from 54px */
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff0000 0%, #ff1e1ed7 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -294,7 +294,7 @@
         }
 
         .input100:focus + .focus-input100 {
-            border-color: #667eea;
+            border-color: #ff4141;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
@@ -315,7 +315,7 @@
         }
 
         .input100:focus + .focus-input100 + .symbol-input100 {
-            color: #667eea;
+            color: #ff0404;
             transform: scale(1.1);
         }
 
@@ -337,7 +337,7 @@
             width: 100%;
             height: 45px; /* Reduced from 50px */
             border-radius: 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff00009d 0%, #ff0000 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -363,7 +363,7 @@
 
         .login100-form-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 15px 30px rgba(255, 74, 74, 0.4);
         }
 
         .login100-form-btn:hover::before {
@@ -385,13 +385,13 @@
             font-family: 'Poppins', sans-serif;
             font-size: 13px;
             line-height: 1.5;
-            color: #667eea;
+            color: #ff3131;
             text-decoration: none;
             transition: all 0.3s;
         }
 
         .txt2:hover {
-            color: #5a67d8;
+            color: #ff0000;
             text-decoration: underline;
             transform: translateY(-1px);
         }
@@ -654,7 +654,7 @@
                         $brandName = $generalSettings->brand_name ?? config('app.name');
                     @endphp
 
-                    <div style="text-align: center; max-width: 100%; display: flex; justify-content: center; align-items: center;">
+                    <div style="text-align: center; max-width: 100%; ">
                         @if($logoUrl)
                             <!-- Dynamic Logo from General Settings -->
                             <img src="{{ $logoUrl }}" 

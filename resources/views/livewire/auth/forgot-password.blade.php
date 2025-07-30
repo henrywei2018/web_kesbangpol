@@ -61,6 +61,9 @@
             </div>
         @enderror
 
+        {{-- Turnstile Security Check --}}
+        @include('components.auth-turnstile', ['siteKey' => $siteKey])
+
         <div class="container-login100-form-btn">
             <button class="login100-form-btn" type="submit" 
                     wire:loading.class="loading-btn" 
@@ -276,44 +279,55 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
+        position: relative;
     }
 
     .step {
-        width: 30px;
-        height: 30px;
+        width: 35px;
+        height: 35px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 4px;
+        font-size: 13px;
         font-weight: bold;
-        font-size: 14px;
-        color: white;
-        transition: all 0.3s ease;
+        transition: all 0.4s ease;
+        position: relative;
+        z-index: 2;
     }
 
     .step.active {
         background-color: #667eea;
+        color: white;
+        transform: scale(1.2);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
     }
 
     .step.completed {
         background-color: #48bb78;
+        color: white;
+        box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
     }
 
     .step.inactive {
-        background-color: #e2e8f0;
+        background-color: rgba(226, 232, 240, 0.8);
         color: #718096;
     }
 
     .step-connector {
         width: 50px;
-        height: 2px;
-        background-color: #e2e8f0;
-        transition: all 0.3s ease;
+        height: 3px;
+        background-color: rgba(226, 232, 240, 0.6);
+        border-radius: 2px;
+        transition: all 0.4s ease;
+        position: relative;
     }
 
     .step-connector.completed {
         background-color: #48bb78;
+        box-shadow: 0 2px 10px rgba(72, 187, 120, 0.3);
     }
 
     /* Button link styles */
