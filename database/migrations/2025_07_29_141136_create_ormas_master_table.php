@@ -61,7 +61,7 @@ return new class extends Migration
             // === DATA LEGAL (Copy dari SKT) ===
             $table->string('nomor_akta_notaris')->nullable();
             $table->date('tanggal_akta_notaris')->nullable();
-            $table->enum('jenis_akta', ['akta_pendirian', 'akta_perubahan'])->nullable();
+            $table->string('jenis_akta', 255)->nullable();
             $table->string('nomor_npwp')->nullable();
             $table->string('nama_bank')->nullable();
             $table->string('nomor_rekening_bank')->nullable();

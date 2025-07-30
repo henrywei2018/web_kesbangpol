@@ -17,7 +17,10 @@ class LaporATHGResource extends Resource
 {
     protected static ?string $model = LaporATHG::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
+    protected static ?string $navigationLabel = 'Lapor ATHG';
+    protected static ?string $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

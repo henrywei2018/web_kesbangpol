@@ -35,9 +35,9 @@ class SKLDocumentFeedbackResource extends Resource
     {
         return 'Reviu SKL';
     }
-    protected static ?string $navigationGroup = 'Aplikasi';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
     protected static ?string $navigationGroupIcon = 'heroicon-c-tv';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 
     // Define the form for admin review

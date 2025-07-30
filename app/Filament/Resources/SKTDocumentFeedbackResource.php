@@ -42,7 +42,7 @@ class SKTDocumentFeedbackResource extends Resource
     {
         return 'Reviu SKT';
     }
-    protected static ?string $navigationGroup = 'Aplikasi';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
     protected static ?int $navigationSort = 4; 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 

@@ -22,7 +22,7 @@ class OrmasMasterResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationLabel = 'Master ORMAS';
+    protected static ?string $navigationLabel = 'Data ORMAS';
 
     protected static ?string $navigationGroup = 'POKUS KALTARA';
 

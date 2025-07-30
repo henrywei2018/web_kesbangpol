@@ -54,6 +54,9 @@ class AdminPanelProvider extends PanelProvider
                      ->label('Aplikasi')
                      ->icon('heroicon-c-tv'),
                 NavigationGroup::make()
+                     ->label('POKUS KALTARA')
+                     ->icon('heroicon-c-tv'),
+                NavigationGroup::make()
                      ->label('Layanan')
                      ->icon('heroicon-o-briefcase'),
                 NavigationGroup::make()
