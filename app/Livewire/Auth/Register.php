@@ -16,6 +16,7 @@ class Register extends Component
     public string $firstname = '';
     public string $lastname = '';
     public string $email = '';
+    public string $no_telepon = '';
     public string $password = '';
     public string $password_confirmation = '';
     
@@ -39,6 +40,7 @@ class Register extends Component
                 'lastname' => 'required|string|max:255|regex:/^[\p{L}\s\-\'\.]+$/u',
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => ['required', 'confirmed', Password::defaults()],
+                'no_telepon' => ['required', 'regex:/^\+628[1-9][0-9]{6,11}$/'],
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -61,6 +63,8 @@ class Register extends Component
             'email.unique' => 'Email sudah terdaftar.',
             'password.required' => 'Password wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'no_telepon.required' => 'Nomor HP wajib diisi.',
+            'no_telepon.regex' => 'Nomor HP harus dalam format internasional, contoh: +6281234567890',
             'otp_code.required' => 'Kode OTP wajib diisi.',
             'otp_code.size' => 'Kode OTP harus 6 digit.',
         ];
@@ -130,6 +134,24 @@ class Register extends Component
         
         return $name;
     }
+    protected function normalizePhoneNumber(string $phone): string
+    {
+        // Hapus spasi, tanda baca, dan karakter tidak valid
+        $phone = preg_replace('/[^0-9+]/', '', $phone);
+
+        // Ubah 08xxxx menjadi +628xxxx
+        if (Str::startsWith($phone, '08')) {
+            $phone = '+62' . substr($phone, 1);
+        }
+
+        // Jika tidak diawali dengan + dan diawali 62, tambahkan +
+        if (Str::startsWith($phone, '62') && !Str::startsWith($phone, '+')) {
+            $phone = '+' . $phone;
+        }
+
+        return $phone;
+    }
+
 
     /**
      * Handle registration form submission - delegate to service
@@ -139,6 +161,8 @@ class Register extends Component
         // Generate username if not already done
         $this->generateUsername();
         $this->validate();
+        $normalizedPhone = $this->normalizePhoneNumber($this->no_telepon);
+
 
         $otpService = app(OtpService::class);
         
@@ -158,6 +182,7 @@ class Register extends Component
                 'username' => $this->generated_username,
                 'email' => $this->email,
                 'password' => $this->password,
+                'no_telepon' => $normalizedPhone,
             ],
             'otp_email' => $this->email
         ]);

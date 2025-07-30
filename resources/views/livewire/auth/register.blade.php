@@ -71,12 +71,27 @@
                 {{ $message }}
             </div>
         @enderror
+        <div class="wrap-input100 validate-input @error('no_telepon') has-error @enderror">
+            <input class="input100" type="tel" wire:model="no_telepon" placeholder="Nomor WhatsApp (contoh: +6281234567890)">
+            <span class="focus-input100"></span>
+            <span class="symbol-input100">
+                <i class="fa fa-phone" aria-hidden="true"></i>
+            </span>
+        </div>
+        @error('no_telepon')
+            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                {{ $message }}
+            </div>
+        @enderror
 
-        <div class="wrap-input100 validate-input @error('password') has-error @enderror">
-            <input class="input100" type="password" wire:model="password" placeholder="Password">
+        <div class="wrap-input100 validate-input @error('password') has-error @enderror" style="position: relative;">
+            <input class="input100" :type="showPassword ? 'text' : 'password'" wire:model="password" placeholder="Password" id="password">
             <span class="focus-input100"></span>
             <span class="symbol-input100">
                 <i class="fa fa-lock" aria-hidden="true"></i>
+            </span>
+            <span onclick="togglePassword('password', this)" class="password-toggle">
+                <i class="fa fa-eye"></i>
             </span>
         </div>
         @error('password')
@@ -85,11 +100,14 @@
             </div>
         @enderror
 
-        <div class="wrap-input100 validate-input">
-            <input class="input100" type="password" wire:model="password_confirmation" placeholder="Konfirmasi Password">
+        <div class="wrap-input100 validate-input" style="position: relative;">
+            <input class="input100" :type="showConfirm ? 'text' : 'password'" wire:model="password_confirmation" placeholder="Konfirmasi Password" id="password_confirmation">
             <span class="focus-input100"></span>
             <span class="symbol-input100">
                 <i class="fa fa-lock" aria-hidden="true"></i>
+            </span>
+            <span onclick="togglePassword('password_confirmation', this)" class="password-toggle">
+                <i class="fa fa-eye"></i>
             </span>
         </div>
 
@@ -178,6 +196,19 @@
                 from { width: 0%; }
                 to { width: 100%; }
             }
+            .password-toggle {
+                position: absolute;
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: pointer;
+                color: #aaa;
+                font-size: 16px;
+            }
+
+            .password-toggle:hover {
+                color: #333;
+            }
         </style>
     @endif
 </form>
@@ -185,12 +216,23 @@
 {{-- Scripts specific to registration component --}}
 @if($currentStep === 'verification')
 <script>
+    
     document.addEventListener('livewire:init', () => {
         Livewire.on('enable-resend-after-delay', (event) => {
             setTimeout(() => {
                 @this.set('canResend', true);
             }, event.delay);
         });
-    });
+    })
+    function togglePassword(fieldId, toggleIcon) {
+        const input = document.getElementById(fieldId);
+        if (input.type === "password") {
+            input.type = "text";
+            toggleIcon.innerHTML = '<i class="fa fa-eye-slash"></i>';
+        } else {
+            input.type = "password";
+            toggleIcon.innerHTML = '<i class="fa fa-eye"></i>';
+        }
+    };
 </script>
 @endif

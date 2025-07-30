@@ -348,6 +348,13 @@ class SKTResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->emptyStateHeading('Belum Ada Pendaftaran ORMAS')
+            ->emptyStateDescription('Laporkan keberadaan atau perubahan status ORMAS di wilayah Provinsi Kalimantan Utara.')
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Buat Pendaftaran ORMAS')
+                    ->icon('heroicon-o-plus'),
             ]);
     }
 

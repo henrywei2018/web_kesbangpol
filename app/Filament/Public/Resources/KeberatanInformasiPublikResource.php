@@ -23,13 +23,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class KeberatanInformasiPublikResource extends Resource
 {
     protected static ?string $model = KeberatanInformasiPublik::class;
-
+    protected static ?string $slug = 'keberatan-informasi';
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    public static function getNavigationLabel(): string
-    {
-        return 'Keberatan Informasi';
-    }
+    protected static ?string $navigationLabel = 'Keberatan Informasi Publik';
     protected static ?string $navigationGroup = 'PPID';
+    protected static ?int $navigationSort = 2;
 
     public static function form(Forms\Form $form): Forms\Form
     {

@@ -162,4 +162,30 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     {
         return $this->hasMany(AduanKomentar::class);
     }
+    public function getWhatsAppPhoneAttribute(): ?string
+    {
+        if (!$this->no_telepon) {
+            return null;
+        }
+
+        // Format phone number to international format
+        $phone = preg_replace('/[^0-9]/', '', $this->no_telepon);
+        
+        if (str_starts_with($phone, '08')) {
+            return '628' . substr($phone, 2);
+        } elseif (str_starts_with($phone, '8')) {
+            return '62' . $phone;
+        } elseif (str_starts_with($phone, '0')) {
+            return '62' . substr($phone, 1);
+        } elseif (!str_starts_with($phone, '62')) {
+            return '62' . $phone;
+        }
+
+        return $phone;
+    }
+    public function hasWhatsAppPhone(): bool
+    {
+        $phone = $this->getWhatsAppPhoneAttribute();
+        return $phone && strlen($phone) >= 10 && strlen($phone) <= 15;
+    }
 }

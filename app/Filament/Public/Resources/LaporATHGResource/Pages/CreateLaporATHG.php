@@ -1,10 +1,12 @@
 <?php
+// Fixed CreateLaporATHG.php - app/Filament/Public/Resources/LaporATHGResource/Pages/CreateLaporATHG.php
 
 namespace App\Filament\Public\Resources\LaporATHGResource\Pages;
 
 use App\Filament\Public\Resources\LaporATHGResource;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Notifications\Notification;
+use Filament\Actions;
 
 class CreateLaporATHG extends CreateRecord
 {
@@ -59,15 +61,17 @@ class CreateLaporATHG extends CreateRecord
         return $data;
     }
 
-    // Add helpful tooltips and guidance
+    // Fixed method name for newer Filament versions
     protected function getFormActions(): array
     {
         return [
-            $this->getCreateAction()
+            Actions\CreateAction::make()
                 ->label('Kirim Laporan ATHG')
                 ->icon('heroicon-o-paper-airplane'),
-            $this->getCancelAction()
-                ->label('Batal'),
+            Actions\Action::make('cancel')
+                ->label('Batal')
+                ->color('gray')
+                ->url($this->getResource()::getUrl('index')),
         ];
     }
 }

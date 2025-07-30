@@ -14,15 +14,45 @@ class ListLaporATHGS extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Buat Laporan Baru')
-                ->icon('heroicon-o-plus'),
+                ->label('Buat Laporan ATHG')
+                ->icon('heroicon-o-plus'), // Use danger color to emphasize urgency
         ];
     }
 
-    protected function getHeaderWidgets(): array
+    public function getTitle(): string
+    {
+        return 'Laporan ATHG Saya';
+    }
+
+    public function getSubheading(): ?string
+    {
+        $total = $this->getTableQuery()->count();
+        $urgent = $this->getTableQuery()->whereIn('tingkat_urgensi', ['tinggi', 'kritis'])->count();
+        
+        if ($urgent > 0) {
+            return "Total {$total} laporan • {$urgent} laporan urgent memerlukan perhatian";
+        }
+        
+        return "Total {$total} laporan ATHG";
+    }
+
+    // Add custom empty state
+    protected function getTableEmptyStateHeading(): ?string
+    {
+        return 'Belum Ada Laporan ATHG';
+    }
+
+    protected function getTableEmptyStateDescription(): ?string
+    {
+        return 'Laporkan situasi Ancaman, Tantangan, Hambatan, atau Gangguan yang memerlukan perhatian khusus.';
+    }
+
+    protected function getTableEmptyStateActions(): array
     {
         return [
-            // You can add widgets here if needed
+            Actions\CreateAction::make()
+                ->label('Buat Laporan ATHG')
+                ->icon('heroicon-o-plus'),
         ];
     }
 }

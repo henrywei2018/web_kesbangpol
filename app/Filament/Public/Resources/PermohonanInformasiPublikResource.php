@@ -27,13 +27,11 @@ use Joaopaulolndev\FilamentPdfViewer\Forms\Components\PdfViewerField;
 class PermohonanInformasiPublikResource extends Resource
 {
     protected static ?string $model = PermohonanInformasiPublik::class;
-    public static function getNavigationLabel(): string
-    {
-        return 'Permohonan Informasi';
-    }
+    protected static ?string $slug = 'permohonan-informasi';
+    protected static ?string $navigationLabel = 'Permohonan Informasi Publik';
     protected static ?string $navigationGroup = 'PPID';
-
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?int $navigationSort = 1;
 
 
     public static function form(Form $form): Form

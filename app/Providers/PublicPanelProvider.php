@@ -1,8 +1,8 @@
 <?php
-// 1. Update your PublicPanelProvider.php - Add complete middleware and auth configuration
 
 namespace App\Providers;
 
+use App\Livewire\MyProfileExtended;
 use App\Settings\GeneralSettings;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -50,23 +50,20 @@ class PublicPanelProvider extends PanelProvider
             // Dashboard
             ->pages([
                 \App\Filament\Public\Pages\Dashboard::class,
+                \App\Filament\Public\Pages\OrmasDashboard::class,
             ])
             
             // Navigation Groups
             ->navigationGroups([
                 'POKUS' => \Filament\Navigation\NavigationGroup::make()
                     ->label('POKUSKALTARA')
-                    ->icon('heroicon-o-document-text')
                     ->collapsible(),
                 'PPID' => \Filament\Navigation\NavigationGroup::make()
                     ->label('PPID')
-                    ->icon('heroicon-o-document-text')
                     ->collapsible(),
                 'Layanan' => \Filament\Navigation\NavigationGroup::make()
                     ->label('Layanan')
-                    ->icon('heroicon-o-briefcase')
                     ->collapsible(),
-                
             ])
             
             // Middleware
@@ -91,15 +88,28 @@ class PublicPanelProvider extends PanelProvider
             ->passwordReset(false)
             ->emailVerification(false)
             
-            // Profile management
-            ->profile()
+            // Enable plugins for enhanced functionality
+            ->plugins([
+                // Filament Breezy for enhanced profile management
+                \Jeffgreco13\FilamentBreezy\BreezyCore::make()
+                    ->myProfile(
+                        shouldRegisterUserMenu: true,
+                        shouldRegisterNavigation: false,
+                        navigationGroup: 'Profile',
+                        hasAvatars: true,
+                        slug: 'my-profile'
+                    )
+                    ->myProfileComponents([
+                        'personal_info' => MyProfileExtended::class,
+                    ])
+            ])
             
-            // User menu
+            // User menu with enhanced options
             ->userMenuItems([
                 'profile' => \Filament\Navigation\MenuItem::make()
-                    ->label('Edit Profile')
-                    ->url('/panel/profile')
-                    ->icon('heroicon-o-user'),
+                    ->label('My Profile')
+                    ->url('/panel/my-profile')
+                    ->icon('heroicon-o-user-circle'),
                 'logout' => \Filament\Navigation\MenuItem::make()
                     ->label('Logout')
                     ->url('/logout')

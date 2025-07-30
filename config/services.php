@@ -20,6 +20,12 @@ return [
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
         'scheme' => 'https',
     ],
+    
+    'fonnte' => [
+        'api_url' => env('FONNTE_API_URL', 'https://api.fonnte.com/send'),
+        'token' => env('FONNTE_TOKEN'),
+        'enabled' => env('FONNTE_ENABLED', true),
+    ],
 
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),

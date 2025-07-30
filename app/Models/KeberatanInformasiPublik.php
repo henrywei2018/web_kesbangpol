@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\StatusLayanan;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\HasMedia; 
+use Spatie\MediaLibrary\HasMedia;
+use App\Traits\HasWhatsAppNotifications;
 
 
 class KeberatanInformasiPublik extends Model implements HasMedia
 {
-    use HasFactory; use InteractsWithMedia;
+    use HasFactory, HasWhatsAppNotifications, InteractsWithMedia;
 
     protected $table = 'keberatan_informasi';
     
@@ -69,4 +70,13 @@ class KeberatanInformasiPublik extends Model implements HasMedia
         }
         return $query->where('id_pemohon', auth()->user()->id);
     }
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($skl) {
+            $skl->sendCreationNotification();
+        });
+    }
+    
 }

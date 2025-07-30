@@ -10,10 +10,11 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Models\DocumentLabel;
 use App\Models\SKLDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\HasWhatsAppNotifications;
 
 class SKL extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, InteractsWithMedia, HasWhatsAppNotifications;
     protected $table = 'skls';
     const STATUS_PENGAJUAN = 'pengajuan';
 

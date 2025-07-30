@@ -10,10 +10,11 @@ use App\Models\SKTDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia; 
+use App\Traits\HasWhatsAppNotifications;
 
 class SKT extends Model implements HasMedia
 {
-    use InteractsWithMedia, HasFactory;
+    use InteractsWithMedia, HasFactory, HasWhatsAppNotifications;
 
     // The table associated with the model
     protected $table = 'skts';
@@ -140,5 +141,16 @@ class SKT extends Model implements HasMedia
         $avatarUrl = str_replace(config('app.url'), '', $avatarUrl);
         return $avatarUrl;
     }
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Send WhatsApp notification when SKT is created
+        static::created(function ($skt) {
+            // Send notification
+            $skt->sendCreationNotification();
+        });
+    }
+    
 
 }

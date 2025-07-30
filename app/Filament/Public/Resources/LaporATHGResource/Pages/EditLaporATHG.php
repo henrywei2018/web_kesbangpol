@@ -38,6 +38,13 @@ class EditLaporATHG extends EditRecord
         // Reset status to pending when edited by public user
         if (auth()->user()->hasRole('public') && $this->getRecord()->status_athg !== 'pending') {
             $data['status_athg'] = 'pending';
+            
+            // Show notification about status reset
+            Notification::make()
+                ->info()
+                ->title('Status Reset')
+                ->body('Status laporan direset ke "Pending" karena ada perubahan.')
+                ->send();
         }
         
         return $data;

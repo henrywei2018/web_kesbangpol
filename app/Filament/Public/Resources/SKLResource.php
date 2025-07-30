@@ -166,6 +166,13 @@ class SKLResource extends Resource
                 Tables\Actions\ViewAction::make()->hiddenLabel()->tooltip('Detail'),
                 Tables\Actions\EditAction::make()->hiddenLabel()->tooltip('Edit'),
                 Tables\Actions\DeleteAction::make()->hiddenLabel()->tooltip('Delete'),
+            ])
+            ->emptyStateHeading('Belum Ada Pelaporan ORMAS')
+            ->emptyStateDescription('Laporkan keberadaan atau perubahan status ORMAS di wilayah Provinsi Kalimantan Utara.')
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Buat Pelaporan ORMAS')
+                    ->icon('heroicon-o-plus'),
             ]);
     }
 

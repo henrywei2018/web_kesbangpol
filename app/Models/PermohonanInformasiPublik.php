@@ -8,11 +8,12 @@ use App\Models\StatusLayanan;
 use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\HasMedia; 
+use App\Traits\HasWhatsAppNotifications;
 
 
 class PermohonanInformasiPublik extends Model implements HasMedia
 {
-    use HasFactory;  use InteractsWithMedia;    
+    use HasFactory, HasWhatsAppNotifications, InteractsWithMedia;    
     protected $table = 'permohonan_informasi_publik';
     protected $fillable = [
         'user_id',
@@ -32,6 +33,13 @@ class PermohonanInformasiPublik extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+    protected static function boot()
+    {
+        parent::boot();
+        static::created(function ($request) {
+            $request->sendCreationNotification();
+        });
     }
     public function statuses()
     {
