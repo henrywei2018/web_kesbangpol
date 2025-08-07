@@ -3,14 +3,12 @@
 namespace App\Livewire\Auth;
 
 use App\Services\OtpService;
-use App\Traits\HasTurnstile;
 use Livewire\Component;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Http;
 
 class ForgotPassword extends Component
 {
-    use HasTurnstile;
-
     public string $currentStep = 'email';
     
     // Email form
@@ -30,6 +28,9 @@ class ForgotPassword extends Component
     public string $errorMessage = '';
     public string $successMessage = '';
 
+    // Turnstile - SAME as Login
+    public $turnstileResponse;
+
     protected $listeners = ['otpTimerExpired' => 'handleOtpExpired'];
 
     public function rules()
@@ -37,7 +38,7 @@ class ForgotPassword extends Component
         if ($this->currentStep === 'email') {
             return [
                 'email' => 'required|email|exists:users,email',
-                'turnstileResponse' => app()->environment('local') ? '' : 'required',
+                'turnstileResponse' => 'required', // Add Turnstile validation
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -66,56 +67,68 @@ class ForgotPassword extends Component
         ];
     }
 
+    /**
+     * Validate Turnstile - EXACTLY like Login
+     */
+    public function validateTurnstile()
+    {
+        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+            'secret' => config('services.turnstile.secret'),
+            'response' => $this->turnstileResponse,
+            'remoteip' => request()->ip(),
+        ]);
+
+        return $response->json('success') ?? false;
+    }
+
     // Toggle password visibility
     public function togglePasswordVisibility()
     {
         $this->showPassword = !$this->showPassword;
     }
 
-    // Toggle password confirmation visibility
+    // Toggle password confirmation visibility  
     public function togglePasswordConfirmationVisibility()
     {
         $this->showPasswordConfirmation = !$this->showPasswordConfirmation;
     }
 
     /**
-     * Send reset code with Turnstile validation
+     * Send password reset OTP with Turnstile validation
      */
-    public function sendResetCode()
+    public function sendResetEmail()
     {
         $this->validate();
 
-        // Validate Turnstile
-        if (!$this->validateTurnstile()) {
+        // Turnstile validation - EXACTLY like Login
+        if (!app()->environment('local') && !$this->validateTurnstile()) {
+            $this->errorMessage = 'Verifikasi keamanan gagal. Silakan coba lagi.';
             return;
         }
 
+        // Store email for later use
+        session(['reset_email' => $this->email]);
+
         $otpService = app(OtpService::class);
-        
-        // Delegate to enhanced service
         $result = $otpService->sendOtp($this->email, 'password_reset');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
-            $this->resetTurnstile(); // Reset Turnstile on error
             return;
         }
 
-        // Store email in session for next steps
-        session(['reset_email' => $this->email]);
-
-        // Update UI state based on service response
+        // Move to verification step
         $this->currentStep = 'verification';
         $this->timeLeft = $result['data']['remaining_time'];
         $this->canResend = $result['data']['can_resend'];
-        $this->successMessage = $result['message'];
+        $this->successMessage = 'Kode verifikasi telah dikirim ke email Anda.';
         $this->errorMessage = '';
     }
 
     /**
-     * Verify reset code - delegate to enhanced OtpService
+     * Verify OTP and move to password reset
      */
-    public function verifyResetCode()
+    public function verifyOtp()
     {
         $this->validate();
 
@@ -128,8 +141,6 @@ class ForgotPassword extends Component
         }
 
         $otpService = app(OtpService::class);
-        
-        // Delegate to enhanced service - just verify, don't complete reset yet
         $result = $otpService->verifyOtp($email, $this->otp_code, 'password_reset');
         
         if (!$result['success']) {
@@ -140,7 +151,7 @@ class ForgotPassword extends Component
 
         // Move to password reset step
         $this->currentStep = 'reset';
-        $this->successMessage = 'Kode berhasil diverifikasi. Silakan masukkan password baru.';
+        $this->successMessage = 'Silakan masukkan password baru.';
         $this->errorMessage = '';
     }
 
@@ -235,14 +246,13 @@ class ForgotPassword extends Component
         $this->successMessage = '';
         $this->timeLeft = 0;
         $this->canResend = true;
-        $this->resetTurnstile(); // Reset Turnstile when going back
+        $this->turnstileResponse = ''; // Reset Turnstile
         session()->forget('reset_email');
     }
 
     public function render()
     {
-        return view('livewire.auth.forgot-password', [
-            'siteKey' => $this->getTurnstileSiteKey(),
-        ])->layout('components.layouts.auth');
+        return view('livewire.auth.forgot-password')
+            ->layout('components.layouts.auth');
     }
 }

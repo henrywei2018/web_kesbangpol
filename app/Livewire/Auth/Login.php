@@ -3,18 +3,14 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
-use App\Services\AuthService;
 use App\Services\OtpService;
-use App\Traits\HasTurnstile;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class Login extends Component
 {
-    use HasTurnstile;
-
     public string $currentStep = 'login';
     
     // Login form
@@ -22,10 +18,13 @@ class Login extends Component
     public string $password = '';
     public bool $remember = false;
     
-    // OTP verification
+    // Email verification OTP
     public string $otp_code = '';
     public int $timeLeft = 0;
     public bool $canResend = true;
+    
+    // Turnstile - SAME as ContactForm
+    public $turnstileResponse;
     
     public string $errorMessage = '';
     public string $successMessage = '';
@@ -37,10 +36,10 @@ class Login extends Component
         if ($this->currentStep === 'login') {
             return [
                 'email' => 'required|email',
-                'password' => 'required|min:6',
-                'turnstileResponse' => app()->environment('local') ? '' : 'required',
+                'password' => 'required|string|min:6',
+                'turnstileResponse' => 'required',
             ];
-        } elseif ($this->currentStep === 'verification') {
+        } elseif ($this->currentStep === 'email_verification') {
             return [
                 'otp_code' => 'required|string|size:6',
             ];
@@ -63,124 +62,146 @@ class Login extends Component
     }
 
     /**
-     * Handle login attempt with Turnstile validation and proper redirect
+     * Validate Turnstile - EXACTLY like ContactForm
+     */
+    public function validateTurnstile()
+    {
+        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+            'secret' => config('services.turnstile.secret'),
+            'response' => $this->turnstileResponse,
+            'remoteip' => request()->ip(),
+        ]);
+
+        return $response->json('success') ?? false;
+    }
+
+    /**
+     * Handle login attempt with email verification check
      */
     public function login()
     {
-        $this->validate();
-
-        // Validate Turnstile first
-        if (!$this->validateTurnstile()) {
-            return;
-        }
-
-        // Rate limiting with enhanced key
-        $key = 'login-attempts:' . request()->ip();
+        // Rate limiting
+        $key = 'login:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             $this->errorMessage = "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.";
-            $this->resetTurnstile(); // Reset Turnstile on rate limit
             return;
         }
 
-        // Attempt authentication
+        $this->validate();
+
+        // Turnstile validation - EXACTLY like ContactForm
+        if (!app()->environment('local') && !$this->validateTurnstile()) {
+            $this->errorMessage = 'Verifikasi keamanan gagal. Silakan coba lagi.';
+            return;
+        }
+
         $credentials = [
             'email' => $this->email,
             'password' => $this->password,
         ];
 
-        if (Auth::attempt($credentials, $this->remember)) {
-            RateLimiter::clear($key);
-            
-            $user = Auth::user();
-            
-            // Log successful login
-            Log::info('User logged in successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'ip' => request()->ip(),
-            ]);
-            
-            // Check if user needs email verification
-            if (!$user->hasVerifiedEmail()) {
-                $this->sendEmailVerification($user);
-                return;
-            }
-
-            // Successful login - use AuthService for smart redirect
-            session()->regenerate();
-            $this->successMessage = 'Login berhasil! Mengalihkan...';
-            
-            $authService = app(AuthService::class);
-            $redirectUrl = $authService->handlePostLoginRedirect($user);
-            
-            // Log redirect URL for debugging
-            Log::info('Login redirect', [
-                'user_id' => $user->id,
-                'user_roles' => $user->getRoleNames()->toArray(),
-                'redirect_url' => $redirectUrl,
-            ]);
-            
-            // Use immediate redirect for better UX
-            return $this->redirect($redirectUrl);
-            
-        } else {
-            RateLimiter::hit($key);
-            $this->errorMessage = 'Email atau password tidak valid.';
-            $this->resetTurnstile(); // Reset Turnstile on failed login
-            
-            // Log failed login attempt
-            Log::warning('Failed login attempt', [
-                'email' => $this->email,
-                'ip' => request()->ip(),
-            ]);
+        // Attempt to authenticate
+        if (!Auth::attempt($credentials, $this->remember)) {
+            RateLimiter::hit($key, 300); // 5 minutes lockout
+            $this->errorMessage = 'Email atau password salah.';
+            $this->password = '';
+            // Reset Turnstile
+            $this->turnstileResponse = '';
+            return;
         }
+
+        // Authentication successful, now check email verification
+        $user = Auth::user();
+
+        if (!$user->hasVerifiedEmail()) {
+            // Email not verified, send OTP for verification
+            $this->handleUnverifiedEmail($user);
+            return;
+        }
+
+        // Email is verified, complete login
+        $this->completeLogin();
     }
 
     /**
-     * Send email verification for unverified users
+     * Handle user with unverified email
      */
-    protected function sendEmailVerification(User $user)
+    protected function handleUnverifiedEmail(User $user)
     {
+        // Don't keep user logged in if email not verified
         Auth::logout();
-        
+
         $otpService = app(OtpService::class);
+        
+        // Send email verification OTP
         $result = $otpService->sendOtp($user->email, 'email_verification');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
-            $this->resetTurnstile();
             return;
         }
 
-        // Store email for verification step
+        // Store email for verification process
         session(['verify_email' => $user->email]);
-        
-        // Move to verification step
-        $this->currentStep = 'verification';
+
+        // Switch to email verification step
+        $this->currentStep = 'email_verification';
         $this->timeLeft = $result['data']['remaining_time'];
         $this->canResend = $result['data']['can_resend'];
-        $this->successMessage = 'Email belum terverifikasi. Kami telah mengirim kode verifikasi ke email Anda.';
+        $this->successMessage = 'Email Anda belum terverifikasi. Kode verifikasi telah dikirim ke email Anda.';
         $this->errorMessage = '';
     }
 
     /**
-     * Verify email with OTP - using correct OtpService method
+     * Complete successful login
+     */
+    protected function completeLogin()
+    {
+        $user = Auth::user();
+        
+        session()->regenerate();
+        RateLimiter::clear('login:' . request()->ip());
+        
+        $this->successMessage = 'Login berhasil! Mengarahkan ke dashboard...';
+        
+        // Redirect based on user role
+        $redirectUrl = $this->getRedirectUrl($user);
+        $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 1500);
+    }
+
+    /**
+     * Get redirect URL based on user role
+     */
+    protected function getRedirectUrl(User $user)
+    {
+        if ($user->hasRole('super_admin')) {
+            return '/admin';
+        } elseif ($user->hasRole(['admin', 'editor'])) {
+            return '/admin';
+        } else {
+            return '/panel';
+        }
+    }
+
+    /**
+     * Verify email with OTP
      */
     public function verifyEmail()
     {
         $this->validate();
 
         $email = session('verify_email');
+
         if (!$email) {
-            $this->errorMessage = 'Sesi verifikasi telah berakhir. Silakan login ulang.';
+            $this->errorMessage = 'Data email tidak ditemukan. Silakan login ulang.';
             $this->backToLogin();
             return;
         }
 
         $otpService = app(OtpService::class);
         
-        // Use the correct method: verifyOtp (not verifyEmailOtp)
+        // Verify OTP
         $result = $otpService->verifyOtp($email, $this->otp_code, 'email_verification');
         
         if (!$result['success']) {
@@ -189,29 +210,19 @@ class Login extends Component
             return;
         }
 
-        // Find user and mark as verified, then login
+        // Mark email as verified and complete login
         $user = User::where('email', $email)->first();
         if ($user) {
-            // Mark email as verified if not already
-            if (!$user->hasVerifiedEmail()) {
-                $user->markEmailAsVerified();
-            }
+            $user->markEmailAsVerified();
             
-            // Login the user
+            // Log the user in
             Auth::login($user, $this->remember);
-            session()->regenerate();
             
-            // Clear verification session
+            // Clean up session
             session()->forget('verify_email');
             
-            $this->successMessage = 'Email berhasil diverifikasi! Mengalihkan...';
-            
-            // Use AuthService for smart redirect
-            $authService = app(AuthService::class);
-            $redirectUrl = $authService->handlePostLoginRedirect($user);
-            
-            // Use immediate redirect
-            return $this->redirect($redirectUrl);
+            // Complete login process
+            $this->completeLogin();
         } else {
             $this->errorMessage = 'User tidak ditemukan. Silakan login ulang.';
             $this->backToLogin();
@@ -223,11 +234,8 @@ class Login extends Component
      */
     public function resendEmailVerification()
     {
-        if (!$this->canResend) {
-            return;
-        }
-
         $email = session('verify_email');
+        
         if (!$email) {
             $this->errorMessage = 'Data email tidak ditemukan.';
             return;
@@ -235,19 +243,22 @@ class Login extends Component
 
         $otpService = app(OtpService::class);
         
-        // Use the correct method: sendOtp (or resendOtp)
-        $result = $otpService->sendOtp($email, 'email_verification');
+        // Resend OTP
+        $result = $otpService->resendOtp($email, 'email_verification');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
             return;
         }
 
+        // Update UI state
         $this->timeLeft = $result['data']['remaining_time'];
-        $this->canResend = $result['data']['can_resend'];
+        $this->canResend = false;
         $this->successMessage = $result['message'];
         $this->errorMessage = '';
         $this->otp_code = '';
+
+        $this->dispatch('enable-resend-after-delay', delay: 60000);
     }
 
     /**
@@ -261,25 +272,20 @@ class Login extends Component
     }
 
     /**
-     * Go back to login form
+     * Back to login form
      */
     public function backToLogin()
     {
         $this->currentStep = 'login';
-        $this->otp_code = '';
-        $this->password = '';
-        $this->errorMessage = '';
-        $this->successMessage = '';
-        $this->timeLeft = 0;
-        $this->canResend = true;
-        $this->resetTurnstile(); // Reset Turnstile when going back
+        $this->reset(['otp_code', 'errorMessage', 'successMessage']);
         session()->forget('verify_email');
     }
 
     public function render()
     {
-        return view('livewire.auth.login', [
-            'siteKey' => $this->getTurnstileSiteKey(),
-        ])->layout('components.layouts.auth');
+        // DON'T pass siteKey - it's already shared globally via AppServiceProvider
+        return view('livewire.auth.login')->layout('components.layouts.auth', [
+            'brandName' => 'Kesbangpol Kaltara'
+        ]);
     }
 }

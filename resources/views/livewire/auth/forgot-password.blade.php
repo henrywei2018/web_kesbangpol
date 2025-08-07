@@ -1,200 +1,196 @@
-<div>
-<form class="login100-form validate-form" wire:submit="{{ 
-    $currentStep === 'email' ? 'sendResetCode' : 
-    ($currentStep === 'verification' ? 'verifyResetCode' : 'resetPassword') 
-}}">
+<div wire:id="{{ $this->getId() }}">
     <span class="login100-form-title">
-        @if($currentStep === 'email')
-            Reset Password
-        @elseif($currentStep === 'verification')
-            Verifikasi Kode
-        @elseif($currentStep === 'reset')
-            Password Baru
-        @else
-            Reset Berhasil
-        @endif
+        Reset Password
     </span>
 
-    {{-- Progress Indicator --}}
-    @if($currentStep !== 'success')
-        <div class="step-indicator">
-            <div class="step {{ $currentStep === 'email' ? 'active' : 'completed' }}">1</div>
-            <div class="step-connector {{ $currentStep !== 'email' ? 'completed' : '' }}"></div>
-            <div class="step {{ $currentStep === 'verification' ? 'active' : ($currentStep === 'reset' || $currentStep === 'success' ? 'completed' : 'inactive') }}">2</div>
-            <div class="step-connector {{ $currentStep === 'reset' || $currentStep === 'success' ? 'completed' : '' }}"></div>
-            <div class="step {{ $currentStep === 'reset' ? 'active' : ($currentStep === 'success' ? 'completed' : 'inactive') }}">3</div>
-        </div>
-    @endif
-
-    {{-- Alert Messages --}}
+    {{-- Error Message --}}
     @if($errorMessage)
-        <div class="alert alert-danger">
+        <div class="alert-error" style="background-color: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
             {{ $errorMessage }}
         </div>
     @endif
 
+    {{-- Success Message --}}
     @if($successMessage)
-        <div class="alert alert-success">
+        <div class="alert-success" style="background-color: #dcfce7; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
             {{ $successMessage }}
         </div>
     @endif
 
     {{-- Step 1: Email Input --}}
     @if($currentStep === 'email')
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
-                <i class="fa fa-key"></i>
+        <form wire:submit.prevent="sendResetEmail">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
+                    <i class="fa fa-envelope"></i>
+                </div>
+                <p style="color: #718096; margin-bottom: 5px;">Masukkan email Anda untuk reset password</p>
             </div>
-            <p style="color: #718096; margin-bottom: 5px;">Masukkan email Anda untuk menerima kode reset password</p>
-        </div>
 
-        <div class="wrap-input100 validate-input @error('email') has-error @enderror">
-            <input class="input100" type="email" wire:model="email" placeholder="Masukkan email Anda">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-envelope" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('email')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            <div class="wrap-input100 validate-input @error('email') has-error @enderror">
+                <input class="input100" type="email" wire:model="email" placeholder="Email">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-envelope" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('email')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        {{-- Turnstile Security Check --}}
-        @include('components.auth-turnstile', ['siteKey' => $siteKey])
+            {{-- TURNSTILE - Using Global siteKey --}}
+            <div class="mb-3" style="margin-bottom: 20px;">
+                <div 
+                    id="turnstile-container"
+                    class="cf-turnstile" 
+                    data-theme="light"
+                    style="display: flex; justify-content: center;"
+                ></div>
+                @error('turnstileResponse')
+                    <div style="color: #e74c3c; font-size: 12px; margin-top: 5px; margin-bottom: 15px; text-align: center;">
+                        {{ $message }}
+                    </div>
+                @enderror
+            </div>
 
-        <div class="container-login100-form-btn">
-            <button class="login100-form-btn" type="submit" 
-                    wire:loading.class="loading-btn" 
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>Kirim Kode Reset</span>
-                <span wire:loading>Mengirim...</span>
-            </button>
-        </div>
+            <div class="container-login100-form-btn">
+                <button class="login100-form-btn" type="submit" 
+                        wire:loading.class="loading-btn" 
+                        wire:loading.attr="disabled">
+                    <span wire:loading.remove>Kirim Kode Reset</span>
+                    <span wire:loading>Mengirim...</span>
+                </button>
+            </div>
 
-        <div class="text-center p-t-12">
-            <a class="txt2" href="{{ route('login') }}">
-                <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
-                Kembali ke Login
-            </a>
-        </div>
+            <div class="text-center p-t-12">
+                <a class="txt2" href="{{ route('login') }}">
+                    <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
+                    Kembali ke Login
+                </a>
+            </div>
+        </form>
     @endif
 
     {{-- Step 2: OTP Verification --}}
     @if($currentStep === 'verification')
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
-                <i class="fa fa-envelope-open"></i>
+        <form wire:submit.prevent="verifyOtp">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
+                    <i class="fa fa-key"></i>
+                </div>
+                <p style="color: #718096; margin-bottom: 5px;">Masukkan kode verifikasi</p>
+                <p style="color: #718096; font-size: 12px;">Kode telah dikirim ke <strong>{{ session('reset_email') }}</strong></p>
             </div>
-            <p style="color: #718096; margin-bottom: 5px;">Kami telah mengirim kode reset ke:</p>
-            <p style="color: #2d3748; font-weight: 600;">{{ session('reset_email') }}</p>
-        </div>
 
-        <div class="wrap-input100 validate-input @error('otp_code') has-error @enderror">
-            <input class="input100" type="text" wire:model="otp_code" placeholder="Masukkan 6 digit kode OTP" maxlength="6">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-key" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('otp_code')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            <div class="wrap-input100 validate-input @error('otp_code') has-error @enderror">
+                <input class="input100 otp-input" type="text" wire:model="otp_code" placeholder="000000" maxlength="6">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-key" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('otp_code')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        @if($timeLeft > 0)
-            <div style="text-align: center; margin-bottom: 20px; color: #718096;">
-                Kirim ulang kode dalam: <span style="color: #667eea; font-weight: 600;" id="countdown">{{ $timeLeft }}</span> detik
+            {{-- Timer --}}
+            @if($timeLeft > 0)
+                <div style="text-align: center; margin-bottom: 15px;">
+                    @livewire('auth.otp-timer', ['timeLeft' => $timeLeft, 'email' => session('reset_email', '')])
+                </div>
+            @endif
+
+            <div class="container-login100-form-btn">
+                <button class="login100-form-btn" type="submit" 
+                        wire:loading.class="loading-btn" 
+                        wire:loading.attr="disabled">
+                    <span wire:loading.remove>Verifikasi Kode</span>
+                    <span wire:loading>Memverifikasi...</span>
+                </button>
             </div>
-        @endif
 
-        <div class="container-login100-form-btn">
-            <button class="login100-form-btn" type="submit" 
-                    wire:loading.class="loading-btn" 
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>Verifikasi Kode</span>
-                <span wire:loading>Memverifikasi...</span>
-            </button>
-        </div>
+            <div class="text-center p-t-12">
+                <button type="button" class="btn-link" wire:click="resendOtp" 
+                        {{ !$canResend ? 'disabled' : '' }}>
+                    {{ $canResend ? 'Kirim Ulang Kode' : 'Tunggu untuk kirim ulang' }}
+                </button>
+            </div>
 
-        <div class="text-center p-t-12">
-            <button type="button" class="btn-link" wire:click="resendOtp" 
-                    style="background: none; border: none; color: #667eea; text-decoration: underline; cursor: pointer;"
-                    {{ !$canResend ? 'disabled' : '' }}>
-                {{ $canResend ? 'Kirim Ulang Kode' : 'Tunggu untuk kirim ulang' }}
-            </button>
-        </div>
-
-        <div class="text-center p-t-12">
-            <button type="button" class="btn-link" wire:click="backToEmail"
-                    style="background: none; border: none; color: #718096; text-decoration: underline; cursor: pointer;">
-                <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
-                Kembali ke Email
-            </button>
-        </div>
+            <div class="text-center p-t-12">
+                <button type="button" class="btn-link" wire:click="backToEmail"
+                        style="background: none; border: none; color: #718096; text-decoration: underline; cursor: pointer;">
+                    <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
+                    Kembali ke Email
+                </button>
+            </div>
+        </form>
     @endif
 
     {{-- Step 3: Password Reset --}}
     @if($currentStep === 'reset')
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
-                <i class="fa fa-lock"></i>
+        <form wire:submit.prevent="resetPassword">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
+                    <i class="fa fa-lock"></i>
+                </div>
+                <p style="color: #718096; margin-bottom: 5px;">Masukkan password baru Anda</p>
             </div>
-            <p style="color: #718096; margin-bottom: 5px;">Masukkan password baru Anda</p>
-        </div>
 
-        {{-- New Password Field with Show/Hide Toggle --}}
-        <div class="wrap-input100 validate-input @error('password') has-error @enderror" style="position: relative;">
-            <input class="input100" type="{{ $showPassword ? 'text' : 'password' }}" wire:model="password" placeholder="Password Baru">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-lock" aria-hidden="true"></i>
-            </span>
-            <span class="password-toggle" wire:click="togglePasswordVisibility">
-                <i class="fa {{ $showPassword ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('password')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- New Password Field with Show/Hide Toggle --}}
+            <div class="wrap-input100 validate-input @error('password') has-error @enderror" style="position: relative;">
+                <input class="input100" type="{{ $showPassword ? 'text' : 'password' }}" wire:model="password" placeholder="Password Baru">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                </span>
+                <span class="password-toggle" wire:click="togglePasswordVisibility">
+                    <i class="fa {{ $showPassword ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('password')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        {{-- Password Confirmation Field with Show/Hide Toggle --}}
-        <div class="wrap-input100 validate-input @error('password_confirmation') has-error @enderror" style="position: relative;">
-            <input class="input100" type="{{ $showPasswordConfirmation ? 'text' : 'password' }}" wire:model="password_confirmation" placeholder="Konfirmasi Password Baru">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-lock" aria-hidden="true"></i>
-            </span>
-            <span class="password-toggle" wire:click="togglePasswordConfirmationVisibility">
-                <i class="fa {{ $showPasswordConfirmation ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('password_confirmation')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Password Confirmation Field with Show/Hide Toggle --}}
+            <div class="wrap-input100 validate-input @error('password_confirmation') has-error @enderror" style="position: relative;">
+                <input class="input100" type="{{ $showPasswordConfirmation ? 'text' : 'password' }}" wire:model="password_confirmation" placeholder="Konfirmasi Password Baru">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                </span>
+                <span class="password-toggle" wire:click="togglePasswordConfirmationVisibility">
+                    <i class="fa {{ $showPasswordConfirmation ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('password_confirmation')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        <div class="container-login100-form-btn">
-            <button class="login100-form-btn" type="submit" 
-                    wire:loading.class="loading-btn" 
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>Reset Password</span>
-                <span wire:loading>Memproses...</span>
-            </button>
-        </div>
+            <div class="container-login100-form-btn">
+                <button class="login100-form-btn" type="submit" 
+                        wire:loading.class="loading-btn" 
+                        wire:loading.attr="disabled">
+                    <span wire:loading.remove">Reset Password</span>
+                    <span wire:loading>Memproses...</span>
+                </button>
+            </div>
 
-        <div class="text-center p-t-12">
-            <button type="button" class="btn-link" wire:click="backToEmail"
-                    style="background: none; border: none; color: #718096; text-decoration: underline; cursor: pointer;">
-                <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
-                Mulai Ulang
-            </button>
-        </div>
+            <div class="text-center p-t-12">
+                <button type="button" class="btn-link" wire:click="backToEmail"
+                        style="background: none; border: none; color: #718096; text-decoration: underline; cursor: pointer;">
+                    <i class="fa fa-long-arrow-left m-r-5" aria-hidden="true"></i>
+                    Mulai Ulang
+                </button>
+            </div>
+        </form>
     @endif
 
     {{-- Step 4: Success Message --}}
@@ -217,7 +213,7 @@
             </div>
         </div>
     @endif
-</form>
+</div>
 
 {{-- Styles --}}
 <style>
@@ -279,105 +275,148 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
-        position: relative;
+        margin-bottom: 30px;
     }
 
     .step {
-        width: 35px;
-        height: 35px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 4px;
-        font-size: 13px;
         font-weight: bold;
-        transition: all 0.4s ease;
-        position: relative;
-        z-index: 2;
+        font-size: 14px;
+        color: white;
+        transition: all 0.3s ease;
+        background-color: rgba(226, 232, 240, 0.8);
+        color: #718096;
     }
 
     .step.active {
-        background-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         transform: scale(1.2);
         box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
     }
 
     .step.completed {
-        background-color: #48bb78;
+        background: linear-gradient(135deg, #00d2d3 0%, #54a0ff 100%);
         color: white;
-        box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
-    }
-
-    .step.inactive {
-        background-color: rgba(226, 232, 240, 0.8);
-        color: #718096;
+        box-shadow: 0 5px 15px rgba(0, 210, 211, 0.3);
     }
 
     .step-connector {
-        width: 50px;
-        height: 3px;
+        width: 60px;
+        height: 4px;
         background-color: rgba(226, 232, 240, 0.6);
         border-radius: 2px;
         transition: all 0.4s ease;
-        position: relative;
     }
 
     .step-connector.completed {
-        background-color: #48bb78;
-        box-shadow: 0 2px 10px rgba(72, 187, 120, 0.3);
-    }
-
-    /* Button link styles */
-    .btn-link:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        color: #a0aec0 !important;
+        background: linear-gradient(135deg, #00d2d3 0%, #54a0ff 100%);
+        box-shadow: 0 2px 10px rgba(0, 210, 211, 0.3);
     }
 </style>
 
-{{-- Scripts --}}
-@if($currentStep === 'verification')
+@push('scripts')
 <script>
-    document.addEventListener('livewire:init', () => {
-        // Countdown timer
-        let timeLeft = @js($timeLeft);
-        const countdownElement = document.getElementById('countdown');
+    document.addEventListener('DOMContentLoaded', function() {
+        let turnstileInstance = null;
+        const SITE_KEY = '{{ $siteKey ?? "" }}';
         
-        if (timeLeft > 0 && countdownElement) {
-            const timer = setInterval(() => {
-                timeLeft--;
-                countdownElement.textContent = timeLeft;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    @this.call('handleOtpExpired');
+        console.log('🔧 ForgotPassword Turnstile Debug:', {
+            siteKey: SITE_KEY,
+            environment: '{{ app()->environment() }}',
+            hasContainer: !!document.querySelector('#turnstile-container')
+        });
+
+        function initTurnstile() {
+            const container = document.querySelector('#turnstile-container');
+            if (!container) {
+                console.error('🔧 ForgotPassword: Turnstile container not found');
+                return;
+            }
+
+            if (!SITE_KEY) {
+                console.error('🔧 ForgotPassword: No site key available');
+                container.innerHTML = '<div style="color: red; font-size: 12px;">No Turnstile Site Key</div>';
+                return;
+            }
+
+            try {
+                // Clean up existing instance
+                if (turnstileInstance) {
+                    turnstile.remove(turnstileInstance);
                 }
-            }, 1000);
+                
+                // Clear container
+                container.innerHTML = '';
+                
+                console.log('🔧 ForgotPassword: Creating Turnstile widget...');
+                
+                // Create new instance
+                turnstileInstance = turnstile.render('#turnstile-container', {
+                    sitekey: SITE_KEY,
+                    theme: 'light',
+                    callback: function(token) {
+                        console.log('🔧 ForgotPassword: Turnstile callback received token');
+                        if (window.Livewire) {
+                            const el = document.querySelector('[wire\\:id]');
+                            if (el) {
+                                window.Livewire.find(el.getAttribute('wire:id'))
+                                    .set('turnstileResponse', token);
+                            }
+                        }
+                    },
+                    'error-callback': function(error) {
+                        console.error('🔧 ForgotPassword: Turnstile error:', error);
+                    }
+                });
+                
+                console.log('🔧 ForgotPassword: Turnstile instance created:', turnstileInstance);
+                
+            } catch (error) {
+                console.error('🔧 ForgotPassword: Turnstile initialization error:', error);
+                container.innerHTML = '<div style="color: red; font-size: 12px;">Turnstile Init Error</div>';
+            }
         }
 
-        // Handle redirect after delay
-        Livewire.on('redirect-after-delay', (event) => {
-            setTimeout(() => {
-                window.location.href = event.url;
-            }, event.delay);
-        });
-    });
-</script>
-@endif
+        // Wait for Turnstile API to load
+        window.onTurnstileLoad = function() {
+            console.log('🔧 ForgotPassword: Turnstile API loaded via callback');
+            initTurnstile();
+        };
 
-@if($currentStep === 'success')
-<script>
-    document.addEventListener('livewire:init', () => {
-        // Handle redirect after delay
-        Livewire.on('redirect-after-delay', (event) => {
-            setTimeout(() => {
-                window.location.href = event.url;
-            }, event.delay);
+        // Also try immediate initialization if script already loaded
+        if (typeof turnstile !== 'undefined') {
+            console.log('🔧 ForgotPassword: Turnstile API already available');
+            initTurnstile();
+        } else {
+            console.log('🔧 ForgotPassword: Waiting for Turnstile API to load...');
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (turnstileInstance) {
+                try {
+                    turnstile.remove(turnstileInstance);
+                } catch (error) {
+                    console.error('🔧 ForgotPassword: Turnstile cleanup error:', error);
+                }
+            }
+        });
+
+        // Reinitialize on Livewire updates
+        document.addEventListener('livewire:navigated', function() {
+            if (typeof turnstile !== 'undefined') {
+                setTimeout(initTurnstile, 100);
+            }
         });
     });
 </script>
-@endif
-</div>
+
+<!-- Load Turnstile API -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+@endpush

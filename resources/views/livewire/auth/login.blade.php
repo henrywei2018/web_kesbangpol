@@ -1,8 +1,8 @@
-   
-<div>
+<div wire:id="{{ $this->getId() }}">
     <span class="login100-form-title">
         Masuk
     </span>
+    
     {{-- Error Message --}}
     @if($errorMessage)
         <div class="alert-error" style="background-color: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
@@ -52,6 +52,21 @@
                 <label class="label-checkbox100" for="remember">
                     Ingat saya
                 </label>
+            </div>
+
+            {{-- TURNSTILE - With wire:ignore to prevent DOM updates --}}
+            <div class="mb-3" style="margin-bottom: 20px;" wire:ignore>
+                <div 
+                    id="turnstile-container"
+                    class="cf-turnstile" 
+                    data-theme="light"
+                    style="display: flex; justify-content: center;"
+                ></div>
+                @error('turnstileResponse')
+                    <div style="color: #e74c3c; font-size: 12px; margin-top: 5px; margin-bottom: 15px; text-align: center;">
+                        {{ $message }}
+                    </div>
+                @enderror
             </div>
 
             <div class="container-login100-form-btn">
@@ -119,18 +134,143 @@
 
             <div class="text-center p-t-12">
                 <button type="button" class="btn-link" wire:click="resendEmailVerification" 
-                        {{ !$canResend ? 'disabled' : '' }}
-                        style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer;">
-                    {{ $canResend ? 'Kirim Ulang Kode' : 'Tunggu untuk kirim ulang' }}
+                        {{ !$canResend ? 'disabled' : '' }}>
+                    Kirim Ulang Kode
                 </button>
             </div>
 
-            <div class="text-center p-t-20">
-                <button type="button" class="btn-link" wire:click="backToLogin"
-                        style="background: none; border: none; color: #666; text-decoration: underline; cursor: pointer;">
-                    ← Kembali ke Login
+            <div class="text-center p-t-24">
+                <button type="button" class="btn-link" wire:click="backToLogin">
+                    Kembali ke Login
                 </button>
             </div>
         </form>
     @endif
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let turnstileInstance = null;
+        const SITE_KEY = '{{ $siteKey ?? "" }}';
+        
+        console.log('🔧 Login Turnstile Debug:', {
+            siteKey: SITE_KEY,
+            environment: '{{ app()->environment() }}',
+            hasContainer: !!document.querySelector('#turnstile-container')
+        });
+
+        function initTurnstile() {
+            const container = document.querySelector('#turnstile-container');
+            if (!container) {
+                console.error('🔧 Login: Turnstile container not found');
+                return;
+            }
+
+            if (!SITE_KEY) {
+                console.error('🔧 Login: No site key available');
+                container.innerHTML = '<div style="color: red; font-size: 12px;">No Turnstile Site Key</div>';
+                return;
+            }
+
+            try {
+                // Clean up existing instance
+                if (turnstileInstance) {
+                    console.log('🔧 Login: Removing existing Turnstile instance');
+                    turnstile.remove(turnstileInstance);
+                    turnstileInstance = null;
+                }
+                
+                // Clear container
+                container.innerHTML = '';
+                
+                console.log('🔧 Login: Creating Turnstile widget...');
+                
+                // Create new instance
+                turnstileInstance = turnstile.render('#turnstile-container', {
+                    sitekey: SITE_KEY,
+                    theme: 'light',
+                    callback: function(token) {
+                        console.log('🔧 Login: Turnstile callback received token');
+                        if (window.Livewire) {
+                            const el = document.querySelector('[wire\\:id]');
+                            if (el) {
+                                window.Livewire.find(el.getAttribute('wire:id'))
+                                    .set('turnstileResponse', token);
+                            }
+                        }
+                    },
+                    'error-callback': function(error) {
+                        console.error('🔧 Login: Turnstile error:', error);
+                    },
+                    'expired-callback': function() {
+                        console.log('🔧 Login: Turnstile expired, reinitializing...');
+                        setTimeout(initTurnstile, 1000);
+                    }
+                });
+                
+                console.log('🔧 Login: Turnstile instance created:', turnstileInstance);
+                
+            } catch (error) {
+                console.error('🔧 Login: Turnstile initialization error:', error);
+                container.innerHTML = '<div style="color: red; font-size: 12px;">Turnstile Init Error</div>';
+            }
+        }
+
+        // Wait for Turnstile API to load
+        window.onTurnstileLoad = function() {
+            console.log('🔧 Login: Turnstile API loaded via callback');
+            initTurnstile();
+        };
+
+        // Also try immediate initialization if script already loaded
+        if (typeof turnstile !== 'undefined') {
+            console.log('🔧 Login: Turnstile API already available');
+            initTurnstile();
+        } else {
+            console.log('🔧 Login: Waiting for Turnstile API to load...');
+        }
+
+        // IMPROVED: Handle Livewire updates more intelligently  
+        document.addEventListener('livewire:updated', function(event) {
+            console.log('🔧 Login: Livewire updated, checking Turnstile...');
+            
+            // Only reinitialize if we're on login step and container exists
+            const container = document.querySelector('#turnstile-container');
+            const isLoginStep = document.querySelector('form[wire\\:submit\\.prevent="login"]');
+            
+            if (container && isLoginStep && typeof turnstile !== 'undefined') {
+                // Check if Turnstile widget is missing
+                const hasWidget = container.querySelector('.cf-turnstile iframe') || 
+                                container.querySelector('.cf-turnstile > div');
+                
+                if (!hasWidget) {
+                    console.log('🔧 Login: Turnstile widget missing, reinitializing...');
+                    setTimeout(initTurnstile, 100);
+                }
+            }
+        });
+
+        // Handle Livewire navigate (for SPA mode)
+        document.addEventListener('livewire:navigated', function() {
+            if (typeof turnstile !== 'undefined') {
+                setTimeout(initTurnstile, 100);
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (turnstileInstance) {
+                try {
+                    turnstile.remove(turnstileInstance);
+                } catch (error) {
+                    console.error('🔧 Login: Turnstile cleanup error:', error);
+                }
+            }
+        });
+    });
+</script>
+
+<!-- Load Turnstile API -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+@endpush

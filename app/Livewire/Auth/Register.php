@@ -3,17 +3,14 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
-use App\Services\AuthService;
 use App\Services\OtpService;
-use App\Traits\HasTurnstile;
 use Livewire\Component;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class Register extends Component
 {
-    use HasTurnstile;
-
     public string $currentStep = 'registration';
     
     // Registration form fields
@@ -38,6 +35,9 @@ class Register extends Component
     public string $errorMessage = '';
     public string $successMessage = '';
 
+    // Turnstile - SAME as Login
+    public $turnstileResponse;
+
     protected $listeners = ['otpTimerExpired' => 'handleOtpExpired'];
 
     public function rules()
@@ -49,7 +49,7 @@ class Register extends Component
                 'email' => 'required|email|max:255|unique:users,email',
                 'password' => ['required', 'confirmed', Password::defaults()],
                 'no_telepon' => ['required', 'regex:/^(\+628[1-9][0-9]{6,11}|08[1-9][0-9]{6,11})$/'],
-                'turnstileResponse' => app()->environment('local') ? '' : 'required',
+                'turnstileResponse' => 'required',
             ];
         } elseif ($this->currentStep === 'verification') {
             return [
@@ -78,6 +78,20 @@ class Register extends Component
             'otp_code.size' => 'Kode OTP harus 6 digit.',
             'turnstileResponse.required' => 'Harap selesaikan verifikasi keamanan.',
         ];
+    }
+
+    /**
+     * Validate Turnstile - EXACTLY like Login
+     */
+    public function validateTurnstile()
+    {
+        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+            'secret' => config('services.turnstile.secret'),
+            'response' => $this->turnstileResponse,
+            'remoteip' => request()->ip(),
+        ]);
+
+        return $response->json('success') ?? false;
     }
 
     // Toggle password visibility
@@ -141,7 +155,7 @@ class Register extends Component
             
             // Prevent infinite loop
             if ($counter > 9999) {
-                $username = $baseUsername . time();
+                $username = $baseUsername . rand(1000, 9999);
                 break;
             }
         }
@@ -149,105 +163,105 @@ class Register extends Component
         $this->generated_username = $username;
     }
 
-    private function cleanName(string $name): string
+    protected function cleanName(string $name): string
     {
-        // Remove accents and convert to ASCII
-        $name = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
-        
-        // Remove special characters except letters and spaces
-        $name = preg_replace('/[^a-zA-Z\s]/', '', $name);
-        
-        // Replace multiple spaces with single space and trim
-        $name = preg_replace('/\s+/', ' ', trim($name));
-        
+        // Remove special characters, keep only letters
+        $name = preg_replace('/[^\p{L}]/u', '', $name);
         return $name;
     }
 
     protected function normalizePhoneNumber(string $phone): string
     {
-        // Hapus spasi, tanda baca, dan karakter tidak valid
-        $phone = preg_replace('/[^0-9+]/', '', $phone);
-
-        // Ubah 08xxxx menjadi +628xxxx
-        if (Str::startsWith($phone, '08')) {
-            $phone = '+62' . substr($phone, 1);
-        }
-
-        // Jika tidak diawali dengan + dan diawali 62, tambahkan +
-        if (Str::startsWith($phone, '62') && !Str::startsWith($phone, '+')) {
+        // Remove all non-digit characters
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        
+        // Convert to +62 format
+        if (str_starts_with($phone, '08')) {
+            $phone = '+628' . substr($phone, 2);
+        } elseif (str_starts_with($phone, '8') && strlen($phone) >= 9) {
+            $phone = '+628' . substr($phone, 1);
+        } elseif (str_starts_with($phone, '628')) {
             $phone = '+' . $phone;
+        } elseif (!str_starts_with($phone, '+62')) {
+            // If it doesn't start with +62 and not 08, assume it's missing +628
+            if (strlen($phone) >= 8) {
+                $phone = '+628' . $phone;
+            }
         }
-
+        
         return $phone;
     }
 
     /**
-     * Handle registration form submission with Turnstile
+     * IMPROVED: Register new user with better error handling
      */
     public function register()
     {
-        // Generate username if not already done
-        $this->generateUsername();
         $this->validate();
 
-        // Validate Turnstile
-        if (!$this->validateTurnstile()) {
+        // Turnstile validation
+        if (!app()->environment('local') && !$this->validateTurnstile()) {
+            $this->errorMessage = 'Verifikasi keamanan gagal. Silakan coba lagi.';
+            $this->turnstileResponse = ''; // Reset Turnstile
             return;
         }
 
-        $normalizedPhone = $this->normalizePhoneNumber($this->no_telepon);
+        // Generate final username
+        $this->generateUsername();
 
+        // Prepare registration data
+        $registrationData = [
+            'firstname' => $this->firstname,
+            'lastname' => $this->lastname,
+            'username' => $this->generated_username,
+            'email' => $this->email,
+            'no_telepon' => $this->no_telepon,
+            'password' => $this->password,
+        ];
+
+        // Store data in session for use during OTP verification
+        session([
+            'registration_data' => $registrationData,
+            'otp_email' => $this->email
+        ]);
+
+        // Send OTP using improved service
         $otpService = app(OtpService::class);
-        
-        // Delegate to service
         $result = $otpService->sendOtp($this->email, 'registration');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
-            $this->resetTurnstile(); // Reset Turnstile on error
+            $this->turnstileResponse = ''; // Reset Turnstile on error
             return;
         }
 
-        // Store registration data in session
-        session([
-            'registration_data' => [
-                'firstname' => $this->firstname,
-                'lastname' => $this->lastname,
-                'username' => $this->generated_username,
-                'email' => $this->email,
-                'password' => $this->password,
-                'no_telepon' => $normalizedPhone,
-            ],
-            'otp_email' => $this->email
-        ]);
-
-        // Update UI state
+        // Move to verification step
         $this->currentStep = 'verification';
         $this->timeLeft = $result['data']['remaining_time'];
         $this->canResend = $result['data']['can_resend'];
-        $this->successMessage = $result['message'];
+        $this->successMessage = 'Kode verifikasi telah dikirim ke email Anda.';
         $this->errorMessage = '';
+        $this->turnstileResponse = ''; // Clear Turnstile after successful submission
     }
 
     /**
-     * Handle OTP verification - delegate to service
+     * IMPROVED: Verify OTP and complete registration
      */
     public function verifyOtp()
     {
         $this->validate();
 
-        $registrationData = session('registration_data');
         $email = session('otp_email');
+        $registrationData = session('registration_data');
 
-        if (!$registrationData || !$email) {
+        if (!$email || !$registrationData) {
             $this->errorMessage = 'Data registrasi tidak ditemukan. Silakan mulai ulang.';
             $this->backToRegistration();
             return;
         }
 
+        // Use improved OTP service
         $otpService = app(OtpService::class);
-        
-        // Delegate complete registration to service
         $result = $otpService->completeRegistration($registrationData, $email, $this->otp_code);
         
         if (!$result['success']) {
@@ -259,18 +273,17 @@ class Register extends Component
         // Clear session data
         session()->forget(['registration_data', 'otp_email']);
 
-        // Update UI state
+        // Move to success step
         $this->currentStep = 'success';
         $this->successMessage = $result['message'];
 
-        // Redirect after delay
-        $authService = app(AuthService::class);
-        $redirectUrl = $authService->getDashboardUrl(auth()->user());
+        // Redirect to login after delay
+        $redirectUrl = $result['data']['redirect_url'] ?? route('login');
         $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 3000);
     }
 
     /**
-     * Resend OTP
+     * IMPROVED: Resend OTP with better error handling
      */
     public function resendOtp()
     {
@@ -280,12 +293,13 @@ class Register extends Component
 
         $email = session('otp_email');
         if (!$email) {
-            $this->errorMessage = 'Data email tidak ditemukan. Silakan mulai ulang registrasi.';
+            $this->errorMessage = 'Email tidak ditemukan. Silakan mulai ulang registrasi.';
             return;
         }
 
+        // Use improved OTP service
         $otpService = app(OtpService::class);
-        $result = $otpService->sendOtp($email, 'registration');
+        $result = $otpService->resendOtp($email, 'registration');
         
         if (!$result['success']) {
             $this->errorMessage = $result['message'];
@@ -296,6 +310,7 @@ class Register extends Component
         $this->canResend = $result['data']['can_resend'];
         $this->successMessage = $result['message'];
         $this->errorMessage = '';
+        $this->otp_code = ''; // Clear OTP input
     }
 
     /**
@@ -313,7 +328,7 @@ class Register extends Component
         $this->canResend = true;
         $this->errorMessage = '';
         $this->successMessage = '';
-        $this->resetTurnstile(); // Reset Turnstile when going back
+        $this->turnstileResponse = ''; // Reset Turnstile
     }
 
     /**
@@ -323,12 +338,11 @@ class Register extends Component
     {
         $this->canResend = true;
         $this->timeLeft = 0;
+        $this->errorMessage = 'Kode OTP telah kedaluarsa. Silakan minta kode baru.';
     }
 
     public function render()
     {
-        return view('livewire.auth.register', [
-            'siteKey' => $this->getTurnstileSiteKey(),
-        ])->layout('components.layouts.auth');
+        return view('livewire.auth.register')->layout('components.layouts.auth');
     }
 }

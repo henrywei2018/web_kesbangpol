@@ -1,353 +1,363 @@
-<div>
-<form class="login100-form validate-form" wire:submit="{{ $currentStep === 'registration' ? 'register' : 'verifyOtp' }}">
+<div wire:id="{{ $this->getId() }}">
     <span class="login100-form-title">
-        @if($currentStep === 'registration')
-            Daftar Akun
-        @elseif($currentStep === 'verification')
-            Verifikasi Email
-        @else
-            Registrasi Berhasil
-        @endif
+        Daftar Akun
     </span>
-
-    {{-- Progress Indicator --}}
-    @if($currentStep !== 'success')
-        <div class="step-indicator">
-            <div class="step {{ $currentStep === 'registration' ? 'active' : 'completed' }}">1</div>
-            <div class="step-connector {{ $currentStep !== 'registration' ? 'completed' : '' }}"></div>
-            <div class="step {{ $currentStep === 'verification' ? 'active' : ($currentStep === 'success' ? 'completed' : 'inactive') }}">2</div>
-        </div>
-    @endif
-
-    {{-- Alert Messages --}}
+    
+    {{-- Error Message --}}
     @if($errorMessage)
-        <div class="alert alert-danger">
+        <div class="alert-error" style="background-color: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
             {{ $errorMessage }}
         </div>
     @endif
 
+    {{-- Success Message --}}
     @if($successMessage)
-        <div class="alert alert-success">
+        <div class="alert-success" style="background-color: #dcfce7; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
             {{ $successMessage }}
         </div>
     @endif
 
     {{-- Registration Form --}}
     @if($currentStep === 'registration')
-        <div class="wrap-input100 validate-input @error('firstname') has-error @enderror">
-            <input class="input100" type="text" wire:model="firstname" placeholder="First Name">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-user" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('firstname')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+        <form wire:submit.prevent="register">
+            {{-- First Name --}}
+            <div class="wrap-input100 validate-input @error('firstname') has-error @enderror">
+                <input class="input100" type="text" wire:model.live="firstname" placeholder="Nama Depan">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-user" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('firstname')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        <div class="wrap-input100 validate-input @error('lastname') has-error @enderror">
-            <input class="input100" type="text" wire:model="lastname" placeholder="Last Name">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-user-circle" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('lastname')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Last Name --}}
+            <div class="wrap-input100 validate-input @error('lastname') has-error @enderror">
+                <input class="input100" type="text" wire:model.live="lastname" placeholder="Nama Belakang">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-user" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('lastname')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        <div class="wrap-input100 validate-input @error('email') has-error @enderror">
-            <input class="input100" type="email" wire:model="email" placeholder="Email">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-envelope" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('email')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Generated Username Display --}}
+            @if($generated_username)
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 12px; color: #666;">
+                    <i class="fa fa-info-circle" style="color: #007bff;"></i> Username yang akan dibuat: <strong>{{ $generated_username }}</strong>
+                </div>
+            @endif
+
+            {{-- Email --}}
+            <div class="wrap-input100 validate-input @error('email') has-error @enderror">
+                <input class="input100" type="email" wire:model="email" placeholder="Email">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-envelope" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('email')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        {{-- Phone Number Field (Required for WhatsApp) --}}
-        <div class="wrap-input100 validate-input @error('no_telepon') has-error @enderror">
-            <input class="input100" type="tel" wire:model.blur="no_telepon" placeholder="(08xxxxxxxx atau +628xxxxxxxx)">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fab fa-whatsapp" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('no_telepon')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Phone Number --}}
+            <div class="wrap-input100 validate-input @error('no_telepon') has-error @enderror">
+                <input class="input100" type="tel" wire:model="no_telepon" placeholder="Nomor HP (08xxxxxxxxx)">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-phone" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('no_telepon')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        {{-- Password Field with Show/Hide Toggle --}}
-        <div class="wrap-input100 validate-input @error('password') has-error @enderror" style="position: relative;">
-            <input class="input100" type="{{ $showPassword ? 'text' : 'password' }}" wire:model="password" placeholder="Password">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-lock" aria-hidden="true"></i>
-            </span>
-            <span class="password-toggle" wire:click="togglePasswordVisibility">
-                <i class="fa {{ $showPassword ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('password')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Password - NO wire:model on password toggle --}}
+            <div class="wrap-input100 validate-input @error('password') has-error @enderror" style="position: relative;">
+                <input class="input100" type="{{ $showPassword ? 'text' : 'password' }}" wire:model="password" placeholder="Password">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                </span>
+                {{-- Use Alpine.js instead of Livewire for password toggle to avoid DOM updates --}}
+                <span class="password-toggle" 
+                      x-data="{ show: @entangle('showPassword') }" 
+                      @click="show = !show; $wire.set('showPassword', show, false)">
+                    <i class="fa" :class="show ? 'fa-eye-slash' : 'fa-eye'" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('password')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        {{-- Password Confirmation Field with Show/Hide Toggle --}}
-        <div class="wrap-input100 validate-input @error('password_confirmation') has-error @enderror" style="position: relative;">
-            <input class="input100" type="{{ $showPasswordConfirmation ? 'text' : 'password' }}" wire:model="password_confirmation" placeholder="Konfirmasi Password">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-lock" aria-hidden="true"></i>
-            </span>
-            <span class="password-toggle" wire:click="togglePasswordConfirmationVisibility">
-                <i class="fa {{ $showPasswordConfirmation ? 'fa-eye-slash' : 'fa-eye' }}" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('password_confirmation')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            {{-- Password Confirmation - Same Alpine.js approach --}}
+            <div class="wrap-input100 validate-input @error('password_confirmation') has-error @enderror" style="position: relative;">
+                <input class="input100" type="{{ $showPasswordConfirmation ? 'text' : 'password' }}" wire:model="password_confirmation" placeholder="Konfirmasi Password">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                </span>
+                <span class="password-toggle" 
+                      x-data="{ showConf: @entangle('showPasswordConfirmation') }" 
+                      @click="showConf = !showConf; $wire.set('showPasswordConfirmation', showConf, false)">
+                    <i class="fa" :class="showConf ? 'fa-eye-slash' : 'fa-eye'" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('password_confirmation')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        <div class="container-login100-form-btn">
-            <button class="login100-form-btn" type="submit" 
-                    wire:loading.class="loading-btn" 
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>Daftar</span>
-                <span wire:loading>Memproses...</span>
-            </button>
-        </div>
+            {{-- TURNSTILE - With better preservation logic --}}
+            <div class="mb-3" style="margin-bottom: 20px;" wire:ignore>
+                <div 
+                    id="turnstile-container"
+                    class="cf-turnstile" 
+                    data-theme="light"
+                    style="display: flex; justify-content: center;"
+                ></div>
+                @error('turnstileResponse')
+                    <div style="color: #e74c3c; font-size: 12px; margin-top: 5px; margin-bottom: 15px; text-align: center;">
+                        {{ $message }}
+                    </div>
+                @enderror
+            </div>
 
-        <div class="text-center p-t-12">
-            <a class="txt2" href="{{ route('login') }}">
-                Sudah punya akun?
-                <i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
-            </a>
-        </div>
+            <div class="container-login100-form-btn">
+                <button class="login100-form-btn" type="submit" 
+                        wire:loading.class="loading-btn" 
+                        wire:loading.attr="disabled">
+                    <span wire:loading.remove>Daftar</span>
+                    <span wire:loading>Memproses...</span>
+                </button>
+            </div>
+
+            <div class="text-center p-t-12">
+                <a class="txt2" href="{{ route('login') }}">
+                    Sudah punya akun? Masuk
+                    <i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
+                </a>
+            </div>
+        </form>
     @endif
 
-    {{-- OTP Verification Form --}}
+    {{-- OTP Verification Step --}}
     @if($currentStep === 'verification')
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
-                <i class="fa fa-envelope-open"></i>
+        <form wire:submit.prevent="verifyOtp">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #333; margin-bottom: 10px;">Verifikasi Email</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                    Kode verifikasi telah dikirim ke:
+                </p>
+                <strong style="color: #007bff;">{{ session('otp_email') }}</strong>
             </div>
-            <p style="color: #718096; margin-bottom: 5px;">Kami telah mengirim kode verifikasi ke:</p>
-            <p style="color: #2d3748; font-weight: 600;">{{ session('otp_email') }}</p>
-        </div>
 
-        <div class="wrap-input100 validate-input @error('otp_code') has-error @enderror">
-            <input class="input100" type="text" wire:model="otp_code" placeholder="Masukkan 6 digit kode OTP" maxlength="6">
-            <span class="focus-input100"></span>
-            <span class="symbol-input100">
-                <i class="fa fa-key" aria-hidden="true"></i>
-            </span>
-        </div>
-        @error('otp_code')
-            <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
-                {{ $message }}
+            <div class="wrap-input100 validate-input @error('otp_code') has-error @enderror">
+                <input class="input100 otp-input" type="text" wire:model="otp_code" placeholder="000000" maxlength="6">
+                <span class="focus-input100"></span>
+                <span class="symbol-input100">
+                    <i class="fa fa-key" aria-hidden="true"></i>
+                </span>
             </div>
-        @enderror
+            @error('otp_code')
+                <div style="color: #e74c3c; font-size: 12px; margin-top: -10px; margin-bottom: 15px;">
+                    {{ $message }}
+                </div>
+            @enderror
 
-        @if($timeLeft > 0)
-            <div style="text-align: center; margin-bottom: 20px; color: #718096;">
-                Kirim ulang kode dalam: <span style="color: #667eea; font-weight: 600;" id="countdown">{{ $timeLeft }}</span> detik
+            {{-- Timer --}}
+            @if($timeLeft > 0)
+                <div style="text-align: center; margin-bottom: 15px;">
+                    @livewire('auth.otp-timer', ['timeLeft' => $timeLeft, 'email' => session('otp_email', '')])
+                </div>
+            @endif
+
+            <div class="container-login100-form-btn">
+                <button class="login100-form-btn" type="submit" 
+                        wire:loading.class="loading-btn" 
+                        wire:loading.attr="disabled">
+                    <span wire:loading.remove>Verifikasi</span>
+                    <span wire:loading>Memverifikasi...</span>
+                </button>
             </div>
-        @endif
 
-        <div class="container-login100-form-btn">
-            <button class="login100-form-btn" type="submit" 
-                    wire:loading.class="loading-btn" 
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>Verifikasi</span>
-                <span wire:loading>Memverifikasi...</span>
-            </button>
-        </div>
+            <div class="text-center p-t-12">
+                <button type="button" class="btn-link" wire:click="resendOtp" 
+                        {{ !$canResend ? 'disabled' : '' }}>
+                    Kirim Ulang Kode
+                </button>
+            </div>
 
-        <div class="text-center p-t-12">
-            <button type="button" class="btn-link" wire:click="resendOtp" 
-                    style="background: none; border: none; color: #667eea; text-decoration: underline; cursor: pointer;"
-                    {{ !$canResend ? 'disabled' : '' }}>
-                {{ $canResend ? 'Kirim Ulang Kode' : 'Tunggu untuk kirim ulang' }}
-            </button>
-        </div>
-
-        <div class="text-center p-t-12">
-            <button type="button" class="btn-link" wire:click="backToRegistration"
-                    style="background: none; border: none; color: #718096; text-decoration: underline; cursor: pointer;">
-                Kembali ke Form Registrasi
-            </button>
-        </div>
+            <div class="text-center p-t-24">
+                <button type="button" class="btn-link" wire:click="backToRegistration">
+                    Kembali ke Pendaftaran
+                </button>
+            </div>
+        </form>
     @endif
 
-    {{-- Success Message --}}
+    {{-- Success Step --}}
     @if($currentStep === 'success')
         <div style="text-align: center; padding: 20px;">
             <div style="font-size: 48px; color: #48bb78; margin-bottom: 20px;">
                 <i class="fa fa-check-circle"></i>
             </div>
             <h3 style="color: #2d3748; margin-bottom: 10px;">Registrasi Berhasil!</h3>
-            <p style="color: #718096; margin-bottom: 20px;">Anda akan diarahkan ke dashboard dalam beberapa detik...</p>
+            <p style="color: #718096; margin-bottom: 20px;">Akun Anda telah berhasil dibuat. Anda akan diarahkan ke halaman login dalam beberapa detik...</p>
             
             <div style="width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 4px; margin-top: 20px;">
                 <div style="background-color: #667eea; height: 4px; border-radius: 10px; animation: progress 3s ease-in-out;"></div>
             </div>
+
+            <div style="margin-top: 20px;">
+                <a href="{{ route('login') }}" class="login100-form-btn" style="display: inline-block; text-decoration: none; padding: 12px 24px;">
+                    Login Sekarang
+                </a>
+            </div>
         </div>
     @endif
-</form>
+</div>
 
-{{-- Styles --}}
-<style>
-    .password-toggle {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: #aaa;
-        font-size: 16px;
-        z-index: 10;
-        padding: 5px;
-        transition: color 0.3s ease;
-    }
+{{-- Include Alpine.js for password toggle --}}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    .password-toggle:hover {
-        color: #333;
-    }
-
-    .wrap-input100 {
-        position: relative;
-    }
-
-    /* Progress animation for success page */
-    @keyframes progress {
-        from { width: 0%; }
-        to { width: 100%; }
-    }
-
-    /* Loading button style */
-    .loading-btn {
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-
-    /* Alert styles */
-    .alert {
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-        font-size: 14px;
-    }
-
-    .alert-danger {
-        background-color: #fee2e2;
-        border: 1px solid #fecaca;
-        color: #dc2626;
-    }
-
-    .alert-success {
-        background-color: #dcfce7;
-        border: 1px solid #bbf7d0;
-        color: #166534;
-    }
-
-    /* Step indicator styles */
-    .step-indicator {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 30px;
-    }
-
-    .step {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        color: white;
-        transition: all 0.3s ease;
-    }
-
-    .step.active {
-        background-color: #667eea;
-    }
-
-    .step.completed {
-        background-color: #48bb78;
-    }
-
-    .step.inactive {
-        background-color: #e2e8f0;
-        color: #718096;
-    }
-
-    .step-connector {
-        width: 50px;
-        height: 2px;
-        background-color: #e2e8f0;
-        transition: all 0.3s ease;
-    }
-
-    .step-connector.completed {
-        background-color: #48bb78;
-    }
-
-    /* WhatsApp icon color */
-    .fa-whatsapp {
-        color: #25d366 !important;
-    }
-
-    /* Button link styles */
-    .btn-link:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        color: #a0aec0 !important;
-    }
-</style>
-
-{{-- Scripts --}}
-@if($currentStep === 'verification')
+@push('scripts')
 <script>
-    document.addEventListener('livewire:init', () => {
-        // Countdown timer
-        let timeLeft = @js($timeLeft);
-        const countdownElement = document.getElementById('countdown');
+    document.addEventListener('DOMContentLoaded', function() {
+        let turnstileInstance = null;
+        const SITE_KEY = '{{ $siteKey ?? "" }}';
         
-        if (timeLeft > 0 && countdownElement) {
-            const timer = setInterval(() => {
-                timeLeft--;
-                countdownElement.textContent = timeLeft;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    @this.call('handleOtpExpired');
+        console.log('🔧 Register Turnstile Debug:', {
+            siteKey: SITE_KEY,
+            environment: '{{ app()->environment() }}',
+            hasContainer: !!document.querySelector('#turnstile-container')
+        });
+
+        function initTurnstile() {
+            const container = document.querySelector('#turnstile-container');
+            if (!container) {
+                console.error('🔧 Register: Turnstile container not found');
+                return;
+            }
+
+            if (!SITE_KEY) {
+                console.error('🔧 Register: No site key available');
+                container.innerHTML = '<div style="color: red; font-size: 12px;">No Turnstile Site Key</div>';
+                return;
+            }
+
+            try {
+                // Clean up existing instance
+                if (turnstileInstance) {
+                    console.log('🔧 Register: Removing existing Turnstile instance');
+                    turnstile.remove(turnstileInstance);
+                    turnstileInstance = null;
                 }
-            }, 1000);
+                
+                // Clear container
+                container.innerHTML = '';
+                
+                console.log('🔧 Register: Creating Turnstile widget...');
+                
+                // Create new instance
+                turnstileInstance = turnstile.render('#turnstile-container', {
+                    sitekey: SITE_KEY,
+                    theme: 'light',
+                    callback: function(token) {
+                        console.log('🔧 Register: Turnstile callback received token');
+                        if (window.Livewire) {
+                            const el = document.querySelector('[wire\\:id]');
+                            if (el) {
+                                window.Livewire.find(el.getAttribute('wire:id'))
+                                    .set('turnstileResponse', token);
+                            }
+                        }
+                    },
+                    'error-callback': function(error) {
+                        console.error('🔧 Register: Turnstile error:', error);
+                    },
+                    'expired-callback': function() {
+                        console.log('🔧 Register: Turnstile expired, reinitializing...');
+                        setTimeout(initTurnstile, 1000);
+                    }
+                });
+                
+                console.log('🔧 Register: Turnstile instance created:', turnstileInstance);
+                
+            } catch (error) {
+                console.error('🔧 Register: Turnstile initialization error:', error);
+                container.innerHTML = '<div style="color: red; font-size: 12px;">Turnstile Init Error</div>';
+            }
         }
 
-        // Handle redirect after delay
-        Livewire.on('redirect-after-delay', (event) => {
-            setTimeout(() => {
-                window.location.href = event.url;
-            }, event.delay);
+        // Wait for Turnstile API to load
+        window.onTurnstileLoad = function() {
+            console.log('🔧 Register: Turnstile API loaded via callback');
+            initTurnstile();
+        };
+
+        // Also try immediate initialization if script already loaded
+        if (typeof turnstile !== 'undefined') {
+            console.log('🔧 Register: Turnstile API already available');
+            initTurnstile();
+        } else {
+            console.log('🔧 Register: Waiting for Turnstile API to load...');
+        }
+
+        // IMPROVED: Handle Livewire updates more intelligently
+        document.addEventListener('livewire:updated', function(event) {
+            console.log('🔧 Register: Livewire updated, checking Turnstile...');
+            
+            // Only reinitialize if we're on registration step and container exists
+            const container = document.querySelector('#turnstile-container');
+            const isRegistrationStep = document.querySelector('form[wire\\:submit\\.prevent="register"]');
+            
+            if (container && isRegistrationStep && typeof turnstile !== 'undefined') {
+                // Check if Turnstile widget is missing
+                const hasWidget = container.querySelector('.cf-turnstile iframe') || 
+                                container.querySelector('.cf-turnstile > div');
+                
+                if (!hasWidget) {
+                    console.log('🔧 Register: Turnstile widget missing, reinitializing...');
+                    setTimeout(initTurnstile, 100);
+                }
+            }
+        });
+
+        // Handle Livewire navigate (for SPA mode)
+        document.addEventListener('livewire:navigated', function() {
+            if (typeof turnstile !== 'undefined') {
+                setTimeout(initTurnstile, 100);
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (turnstileInstance) {
+                try {
+                    turnstile.remove(turnstileInstance);
+                } catch (error) {
+                    console.error('🔧 Register: Turnstile cleanup error:', error);
+                }
+            }
         });
     });
 </script>
-@endif
-</div>
+
+<!-- Load Turnstile API -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+@endpush

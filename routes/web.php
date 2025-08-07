@@ -58,6 +58,7 @@ Route::get('/layanan-ppid', App\Livewire\PagePPID::class)->name('layanan.ppid');
 Route::get('/layanan-skt', App\Livewire\LayananSkt::class)->name('layanan.skt');
 Route::get('/layanan-skl', App\Livewire\LayananSkl::class)->name('layanan.skl');
 Route::get('/layanan-aduan', App\Livewire\LayananAduan::class)->name('layanan.aduan');
+Route::get('/pokus-kaltara', App\Livewire\PokusKaltara::class)->name('pokus.kaltara');
 Route::get('/skl/cetak/{id}', [App\Filament\Resources\SKLDocumentFeedbackResource::class, 'print'])->name('skl.print');
 Route::get('/skt/cetak/{id}', [App\Filament\Resources\SKTDocumentFeedbackResource::class, 'print'])->name('skt.print');
 Route::get('/admin/spts/filtered-pdf', [App\Filament\Resources\SptResource::class, 'generateFilteredPdf'])->name('spt.filtered-pdf');
