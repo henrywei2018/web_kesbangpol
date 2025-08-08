@@ -74,8 +74,8 @@ class KeberatanInformasiPublik extends Model implements HasMedia
     {
         parent::boot();
 
-        static::created(function ($skl) {
-            $skl->sendCreationNotification();
+        static::created(function ($keberatan) {
+            $keberatan->sendCreationNotification();
         });
     }
     

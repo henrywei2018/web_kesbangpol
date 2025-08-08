@@ -19,7 +19,7 @@ class SKL extends Model implements HasMedia
     const STATUS_PENGAJUAN = 'pengajuan';
 
     protected $fillable = [
-        'id_pemohon', // FK for user submitting the form
+        'id_pemohon', 
         'email_organisasi',
         'jenis_permohonan',
         'nama_organisasi',
@@ -84,6 +84,14 @@ class SKL extends Model implements HasMedia
         // Clean up the URL if needed
         $avatarUrl = str_replace(config('app.url'), '', $avatarUrl);
         return $avatarUrl;
+    }
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($skl) {
+            $skl->sendCreationNotification();
+        });
     }
     
 

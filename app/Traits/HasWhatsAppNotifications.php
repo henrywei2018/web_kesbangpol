@@ -11,12 +11,16 @@ trait HasWhatsAppNotifications
      */
     public function sendCreationNotification(): void
     {
-        if (!config('services.fonnte.enabled')) {
-            return;
-        }
-
         try {
             $fonteService = app(FonteService::class);
+            
+            // Check if WhatsApp is enabled via settings
+            $settings = app(\App\Settings\WhatsAppSettings::class);
+            if (!$settings->enabled) {
+                Log::info('WhatsApp notifications disabled in settings');
+                return;
+            }
+
             $user = $this->user ?? auth()->user();
             
             if (!$user || !$user->no_telepon) {
@@ -72,17 +76,17 @@ trait HasWhatsAppNotifications
         }
     }
 
-    /**
-     * Send status update notification
-     */
     public function sendStatusUpdateNotification(string $newStatus, string $keterangan = ''): void
     {
-        if (!config('services.fonnte.enabled')) {
-            return;
-        }
-
         try {
             $fonteService = app(FonteService::class);
+            
+            // Check if WhatsApp is enabled via settings
+            $settings = app(\App\Settings\WhatsAppSettings::class);
+            if (!$settings->enabled) {
+                return;
+            }
+
             $user = $this->user ?? auth()->user();
             
             if (!$user || !$user->no_telepon) {
@@ -93,13 +97,13 @@ trait HasWhatsAppNotifications
             $serviceType = match (get_class($this)) {
                 'App\Models\SKT' => 'skt',
                 'App\Models\SKL' => 'skl',
-                'App\Models\PermohonanInformasiPublik' => 'information_request',
-                'App\Models\KeberatanInformasiPublik' => 'information_objection',
-                'App\Models\LaporATHG' => 'athg_report',
-                default => 'unknown'
+                'App\Models\PermohonanInformasiPublik' => 'ppid',
+                'App\Models\KeberatanInformasiPublik' => 'ppid',
+                'App\Models\LaporATHG' => 'athg',
+                default => 'main'
             };
 
-            $result = $fonteService->sendStatusUpdate($user->no_telepon, $serviceType, [
+            $result = $fonteService->sendStatusUpdateNotification($user->no_telepon, $serviceType, [
                 'id' => $this->id,
                 'status' => $newStatus,
                 'keterangan' => $keterangan,

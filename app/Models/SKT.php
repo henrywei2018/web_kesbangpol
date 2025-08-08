@@ -25,10 +25,10 @@ class SKT extends Model implements HasMedia
         
         //formulir permohonan
         'id_pemohon',
-        'jenis_permohonan', //enum select options > Pendaftaran/Perubahan
+        'jenis_permohonan',
         'nama_ormas',
         'nama_singkatan_ormas',
-        'tempat_pendirian', //query tb wilayah
+        'tempat_pendirian',
         'tanggal_pendirian',
         'nomor_surat_permohonan',
         'tanggal_surat_permohonan',

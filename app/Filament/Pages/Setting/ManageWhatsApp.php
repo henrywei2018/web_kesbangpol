@@ -1,5 +1,7 @@
 <?php
 
+// UPDATE: app/Filament/Pages/Setting/ManageWhatsApp.php
+
 namespace App\Filament\Pages\Setting;
 
 use App\Settings\WhatsAppSettings;
@@ -116,8 +118,8 @@ class ManageWhatsApp extends SettingsPage
                                     ->columns(2),
                             ]),
 
-                        Forms\Components\Section::make('Test WhatsApp')
-                            ->description('Send a test message to verify your settings')
+                        Forms\Components\Section::make('Basic WhatsApp Test')
+                            ->description('Send a simple test message to verify API connection')
                             ->schema([
                                 Forms\Components\TextInput::make('test_phone')
                                     ->label('Test Phone Number')
@@ -141,7 +143,93 @@ class ManageWhatsApp extends SettingsPage
                                         ->requiresConfirmation()
                                         ->modalDescription('This will send a test admin notification message'),
                                 ])->fullWidth(),
+                            ]),
+
+                        // NEW SECTION: Service Integration Tests
+                        Forms\Components\Section::make('🚀 Service Integration Tests')
+                            ->description('Test WhatsApp notifications for all public panel services')
+                            ->schema([
+                                Forms\Components\Placeholder::make('service_test_info')
+                                    ->content('Test the actual notification messages that users receive when submitting forms on the public panel. Each test simulates a real service submission.')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\TextInput::make('service_test_phone')
+                                    ->label('Test Phone Number')
+                                    ->placeholder('085387555568')
+                                    ->helperText('Phone number to receive test notifications')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Actions::make([
+                                    // SKT Test
+                                    Forms\Components\Actions\Action::make('test_skt')
+                                        ->label('Test SKT Service')
+                                        ->action('testSKTService')
+                                        ->color('primary')
+                                        ->icon('heroicon-o-building-office-2')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test SKT ORMAS Registration')
+                                        ->modalDescription('This will send both USER and ADMIN notifications for SKT (ORMAS Registration) service as if someone just submitted a new registration.')
+                                        ->modalSubmitActionLabel('Send Test'),
+
+                                    // SKL Test
+                                    Forms\Components\Actions\Action::make('test_skl')
+                                        ->label('Test SKL Service')
+                                        ->action('testSKLService')
+                                        ->color('info')
+                                        ->icon('heroicon-o-document-check')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test SKL ORMAS Clearance')
+                                        ->modalDescription('This will send both USER and ADMIN notifications for SKL (ORMAS Clearance) service.')
+                                        ->modalSubmitActionLabel('Send Test'),
+
+                                    // PPID Information Request Test
+                                    Forms\Components\Actions\Action::make('test_ppid_request')
+                                        ->label('Test Information Request')
+                                        ->action('testPPIDRequestService')
+                                        ->color('success')
+                                        ->icon('heroicon-o-document-text')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test PPID Information Request')
+                                        ->modalDescription('This will send both USER and ADMIN notifications for Information Request service.')
+                                        ->modalSubmitActionLabel('Send Test'),
+                                ])->fullWidth(),
+
+                                Forms\Components\Actions::make([
+                                    // PPID Objection Test
+                                    Forms\Components\Actions\Action::make('test_ppid_objection')
+                                        ->label('Test Information Objection')
+                                        ->action('testPPIDObjectionService')
+                                        ->color('warning')
+                                        ->icon('heroicon-o-exclamation-triangle')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test PPID Information Objection')
+                                        ->modalDescription('This will send both USER and ADMIN notifications for Information Objection service.')
+                                        ->modalSubmitActionLabel('Send Test'),
+
+                                    // ATHG Test
+                                    Forms\Components\Actions\Action::make('test_athg')
+                                        ->label('Test ATHG Report')
+                                        ->action('testATHGService')
+                                        ->color('danger')
+                                        ->icon('heroicon-o-shield-exclamation')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test ATHG Security Report')
+                                        ->modalDescription('This will send both USER and ADMIN notifications for ATHG (Security Report) service.')
+                                        ->modalSubmitActionLabel('Send Test'),
+
+                                    // Test ALL Services
+                                    Forms\Components\Actions\Action::make('test_all_services')
+                                        ->label('🎯 Test ALL Services')
+                                        ->action('testAllServices')
+                                        ->color('gray')
+                                        ->icon('heroicon-o-rocket-launch')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Test All Public Panel Services')
+                                        ->modalDescription('This will send test notifications for ALL services (SKT, SKL, PPID Request, PPID Objection, ATHG) to verify complete integration. Total: 10 messages will be sent.')
+                                        ->modalSubmitActionLabel('Send All Tests'),
+                                ])->fullWidth(),
                             ])
+                            ->collapsible(),
                     ])
                     ->columnSpan([
                         "md" => 1
@@ -178,6 +266,8 @@ class ManageWhatsApp extends SettingsPage
         }
     }
 
+    // ===================== BASIC TEST METHODS =====================
+
     public function sendTestUserMessage()
     {
         $data = $this->form->getState();
@@ -188,7 +278,6 @@ class ManageWhatsApp extends SettingsPage
         }
 
         try {
-            // Temporarily update settings for testing
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
             
@@ -218,7 +307,6 @@ class ManageWhatsApp extends SettingsPage
         }
 
         try {
-            // Temporarily update settings for testing
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
             
@@ -237,6 +325,272 @@ class ManageWhatsApp extends SettingsPage
             $this->sendErrorNotification('❌ Test failed: ' . $e->getMessage());
         }
     }
+
+    // ===================== SERVICE TEST METHODS =====================
+
+    public function testSKTService()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            
+            // Test data for SKT
+            $testData = [
+                'id' => 'TEST-001',
+                'nama_ormas' => 'ORMAS Test Kaltara',
+                'jenis_permohonan' => 'pendaftaran',
+            ];
+            
+            $result = $fonteService->sendSKTNotification($phone, $testData);
+
+            if ($result['overall_success']) {
+                $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
+                $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
+                
+                $this->sendSuccessNotification("SKT Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
+            } else {
+                $this->sendErrorNotification('❌ SKT Service test failed. Check your settings and try again.');
+            }
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ SKT Service test error: ' . $e->getMessage());
+        }
+    }
+
+    public function testSKLService()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            
+            $testData = [
+                'id' => 'TEST-SKL-001',
+                'nama_organisasi' => 'Organisasi Test Kaltara',
+                'email_organisasi' => 'test@kaltara.id',
+            ];
+            
+            $result = $fonteService->sendSKLNotification($phone, $testData);
+
+            if ($result['overall_success']) {
+                $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
+                $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
+                
+                $this->sendSuccessNotification("SKL Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
+            } else {
+                $this->sendErrorNotification('❌ SKL Service test failed. Check your settings and try again.');
+            }
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ SKL Service test error: ' . $e->getMessage());
+        }
+    }
+
+    public function testPPIDRequestService()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            
+            $testData = [
+                'id' => 'TEST-PPID-001',
+                'nama_lengkap' => 'Budi Santoso Test',
+            ];
+            
+            $result = $fonteService->sendInformationRequestNotification($phone, $testData);
+
+            if ($result['overall_success']) {
+                $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
+                $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
+                
+                $this->sendSuccessNotification("PPID Information Request Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
+            } else {
+                $this->sendErrorNotification('❌ PPID Information Request test failed. Check your settings and try again.');
+            }
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ PPID Information Request test error: ' . $e->getMessage());
+        }
+    }
+
+    public function testPPIDObjectionService()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            
+            $testData = [
+                'id' => 'TEST-OBJECTION-001',
+                'nama_lengkap' => 'Siti Aminah Test',
+            ];
+            
+            $result = $fonteService->sendInformationObjectionNotification($phone, $testData);
+
+            if ($result['overall_success']) {
+                $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
+                $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
+                
+                $this->sendSuccessNotification("PPID Information Objection Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
+            } else {
+                $this->sendErrorNotification('❌ PPID Information Objection test failed. Check your settings and try again.');
+            }
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ PPID Information Objection test error: ' . $e->getMessage());
+        }
+    }
+
+    public function testATHGService()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            
+            $testData = [
+                'id' => 'TEST-ATHG-001',
+                'nama_lengkap' => 'Ahmad Rianto Test',
+                'bidang' => 'keamanan',
+                'tingkat_urgensi' => 'tinggi',
+            ];
+            
+            $result = $fonteService->sendATHGReportNotification($phone, $testData);
+
+            if ($result['overall_success']) {
+                $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
+                $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
+                
+                $this->sendSuccessNotification("ATHG Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
+            } else {
+                $this->sendErrorNotification('❌ ATHG Service test failed. Check your settings and try again.');
+            }
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ ATHG Service test error: ' . $e->getMessage());
+        }
+    }
+
+    public function testAllServices()
+    {
+        $data = $this->form->getState();
+        $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
+        
+        if (empty($phone)) {
+            $this->sendErrorNotification('Please enter a phone number for service testing');
+            return;
+        }
+
+        try {
+            $settings = app(WhatsAppSettings::class);
+            $settings->fill($data);
+            
+            $fonteService = new FonteService();
+            $results = [];
+
+            // Test all services
+            $services = [
+                'SKT' => [$fonteService, 'sendSKTNotification', [
+                    'id' => 'TEST-001',
+                    'nama_ormas' => 'ORMAS Test Kaltara',
+                    'jenis_permohonan' => 'pendaftaran',
+                ]],
+                'SKL' => [$fonteService, 'sendSKLNotification', [
+                    'id' => 'TEST-SKL-001',
+                    'nama_organisasi' => 'Organisasi Test Kaltara',
+                ]],
+                'PPID Request' => [$fonteService, 'sendInformationRequestNotification', [
+                    'id' => 'TEST-PPID-001',
+                    'nama_lengkap' => 'Budi Santoso Test',
+                ]],
+                'PPID Objection' => [$fonteService, 'sendInformationObjectionNotification', [
+                    'id' => 'TEST-OBJECTION-001',
+                    'nama_lengkap' => 'Siti Aminah Test',
+                ]],
+                'ATHG' => [$fonteService, 'sendATHGReportNotification', [
+                    'id' => 'TEST-ATHG-001',
+                    'nama_lengkap' => 'Ahmad Rianto Test',
+                    'bidang' => 'keamanan',
+                    'tingkat_urgensi' => 'tinggi',
+                ]],
+            ];
+
+            foreach ($services as $serviceName => [$service, $method, $testData]) {
+                try {
+                    $result = $service->$method($phone, $testData);
+                    $results[$serviceName] = $result['overall_success'];
+                    
+                    // Small delay between messages
+                    usleep(500000); // 0.5 seconds
+                } catch (\Exception $e) {
+                    $results[$serviceName] = false;
+                }
+            }
+
+            // Create summary
+            $successCount = array_sum($results);
+            $totalCount = count($results);
+            
+            $summary = "🎯 All Services Test Results ({$successCount}/{$totalCount} passed):\n\n";
+            foreach ($results as $service => $success) {
+                $icon = $success ? '✅' : '❌';
+                $summary .= "• {$icon} {$service}\n";
+            }
+
+            if ($successCount === $totalCount) {
+                $this->sendSuccessNotification($summary . "\n🚀 All services are working perfectly!");
+            } else {
+                $this->sendErrorNotification($summary . "\n⚠️ Some services need attention. Check your settings and admin phone numbers.");
+            }
+
+        } catch (\Exception $e) {
+            $this->sendErrorNotification('❌ All Services test error: ' . $e->getMessage());
+        }
+    }
+
+    // ===================== HELPER METHODS =====================
 
     public function sendSuccessNotification($title)
     {

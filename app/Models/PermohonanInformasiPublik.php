@@ -37,8 +37,8 @@ class PermohonanInformasiPublik extends Model implements HasMedia
     protected static function boot()
     {
         parent::boot();
-        static::created(function ($request) {
-            $request->sendCreationNotification();
+        static::created(function ($permohonan) {
+            $permohonan->sendCreationNotification();
         });
     }
     public function statuses()

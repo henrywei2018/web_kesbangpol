@@ -4,11 +4,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-use App\Traits\HasWhatsAppNotifications; // ADD THIS LINE
+use App\Traits\HasWhatsAppNotifications;
 
 class LaporATHG extends Model
 {
-    use HasFactory, HasWhatsAppNotifications; // ADD HasWhatsAppNotifications
+    use HasFactory, HasWhatsAppNotifications;
 
     protected $table = 'lapor_athg';
 
@@ -56,7 +56,7 @@ class LaporATHG extends Model
             }
         });
 
-        // ADD THIS: Send WhatsApp notification when LaporATHG is created
+        // ENSURE WhatsApp notification is sent
         static::created(function ($lapor) {
             $lapor->sendCreationNotification();
         });

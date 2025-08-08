@@ -206,11 +206,6 @@ class FonteService
         return $phone;
     }
 
-    // ===================== DUAL NOTIFICATION METHODS =====================
-
-    /**
-     * Send notification for SKT submission - DUAL VERSION
-     */
     public function sendSKTNotification(string $phoneNumber, array $data): array
     {
         $userMessage = $this->buildSKTMessage($data);
@@ -274,11 +269,6 @@ class FonteService
         return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, $serviceType);
     }
 
-    // ===================== USER MESSAGE BUILDERS =====================
-
-    /**
-     * Build SKT submission message for user
-     */
     private function buildSKTMessage(array $data): string
     {
         $namaOrmas = $data['nama_ormas'] ?? 'Tidak diketahui';
@@ -449,11 +439,6 @@ class FonteService
         return $message;
     }
 
-    // ===================== ADMIN MESSAGE BUILDERS =====================
-
-    /**
-     * Build SKT admin notification message
-     */
     private function buildSKTAdminMessage(array $data): string
     {
         $namaOrmas = $data['nama_ormas'] ?? 'Tidak diketahui';
