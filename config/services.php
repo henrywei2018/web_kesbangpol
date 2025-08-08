@@ -23,8 +23,16 @@ return [
     
     'fonnte' => [
         'api_url' => env('FONNTE_API_URL', 'https://api.fonnte.com/send'),
-        'token' => env('FONNTE_TOKEN'),
+        'token' => env('FONNTE_TOKEN','Xe4Lk949KbyD6TUmeVmx'),
         'enabled' => env('FONNTE_ENABLED', true),
+        'admin_phones' => [
+        'main' => env('FONNTE_ADMIN_MAIN', '0851722207178'), // Main admin
+        'backup' => env('FONNTE_ADMIN_BACKUP', ''), // Backup admin (optional)
+        'skt_admin' => env('FONNTE_SKT_ADMIN', ''), // SKT specific admin (optional)
+        'skl_admin' => env('FONNTE_SKL_ADMIN', ''), // SKL specific admin (optional)
+        'ppid_admin' => env('FONNTE_PPID_ADMIN', ''), // PPID specific admin (optional)
+        'athg_admin' => env('FONNTE_ATHG_ADMIN', ''), // ATHG specific admin (optional)
+        ],
     ],
 
     'postmark' => [

@@ -45,7 +45,7 @@ class KeberatanInformasiPublikResource extends Resource
                                             ->relationship(
                                                 'permohonan',
                                                 'nomor_register',
-                                                fn(Builder $query) => $query->where('user_id', auth()->id())
+                                                fn(Builder $query) => $query->where('id_pemohon', auth()->id())
                                             )
                                             ->required()
                                             ->searchable()
@@ -159,7 +159,7 @@ class KeberatanInformasiPublikResource extends Resource
                                     ])
                                     ->columns(12),
 
-                                Forms\Components\Hidden::make('user_id')
+                                Forms\Components\Hidden::make('id_pemohon')
                                     ->default(auth()->id()),
                             ]),
 
@@ -339,7 +339,7 @@ class KeberatanInformasiPublikResource extends Resource
 
         // Jika user memiliki role 'public', batasi query hanya ke aduan milik mereka
         if (auth()->user()->hasRole('public')) {
-            return $query->where('user_id', auth()->user()->id);
+            return $query->where('id_pemohon', auth()->user()->id);
         }
 
         // Jika role tidak terdefinisi, bisa mengatur default behavior

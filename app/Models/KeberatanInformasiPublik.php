@@ -14,10 +14,10 @@ class KeberatanInformasiPublik extends Model implements HasMedia
 {
     use HasFactory, HasWhatsAppNotifications, InteractsWithMedia;
 
-    protected $table = 'keberatan_informasi';
+    protected $table = 'keberatan_informasi_publik';
     
     protected $fillable = [
-        'user_id',
+        'id_pemohon',
         'permohonan_id',
         'nomor_registrasi',
         'nik_no_identitas',

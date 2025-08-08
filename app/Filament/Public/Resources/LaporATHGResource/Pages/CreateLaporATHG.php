@@ -23,24 +23,20 @@ class CreateLaporATHG extends CreateRecord
         return 'Laporkan situasi yang memerlukan perhatian khusus di bidang Ekonomi, Budaya, Politik, Keamanan, Lingkungan, atau Kesehatan';
     }
 
+    // REDIRECT LANGSUNG KE INDEX TANPA MODAL
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('view', ['record' => $this->getRecord()]);
+        return $this->getResource()::getUrl('index');
     }
 
+    // NOTIFIKASI SEDERHANA TANPA ACTIONS
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()
             ->success()
-            ->title('✅ Laporan ATHG berhasil dibuat!')
-            ->body('ID Laporan: ' . $this->getRecord()->lapathg_id . '. Tim akan melakukan verifikasi dalam 1x24 jam.')
-            ->actions([
-                \Filament\Notifications\Actions\Action::make('view')
-                    ->button()
-                    ->url($this->getRedirectUrl())
-                    ->label('Lihat Laporan'),
-            ])
-            ->persistent();
+            ->title('Laporan ATHG berhasil dikirim!')
+            ->body('ID Laporan: ' . $this->getRecord()->lapathg_id . '. Tim akan memproses laporan Anda dalam 1x24 jam.')
+            ->duration(5000); // 5 detik
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array
@@ -61,17 +57,55 @@ class CreateLaporATHG extends CreateRecord
         return $data;
     }
 
-    // Fixed method name for newer Filament versions
+    // CUSTOM FORM ACTIONS - HANYA SUBMIT DAN CANCEL
     protected function getFormActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            $this->getCreateAction()
                 ->label('Kirim Laporan ATHG')
-                ->icon('heroicon-o-paper-airplane'),
-            Actions\Action::make('cancel')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('primary'),
+                
+            $this->getCancelFormAction()
                 ->label('Batal')
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
         ];
+    }
+
+    // OVERRIDE CREATE ACTION UNTUK DISABLE MODAL
+    protected function getCreateAction(): Actions\Action
+    {
+        return Actions\Action::make('create')
+            ->label('Kirim Laporan ATHG')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('primary')
+            ->action(function () {
+                // Validate form
+                $this->form->validate();
+                
+                // Get form data
+                $data = $this->form->getState();
+                
+                // Process data before create
+                $data = $this->mutateFormDataBeforeCreate($data);
+                
+                // Create record
+                $record = $this->getModel()::create($data);
+                
+                // Set record
+                $this->record = $record;
+                
+                // Show notification
+                $this->getCreatedNotification()?->send();
+                
+                // Redirect
+                $this->redirect($this->getRedirectUrl());
+            })
+            ->requiresConfirmation()
+            ->modalHeading('Konfirmasi Pengiriman Laporan')
+            ->modalDescription('Apakah Anda yakin ingin mengirim laporan ATHG ini? Pastikan semua informasi sudah benar.')
+            ->modalSubmitActionLabel('Ya, Kirim Laporan')
+            ->modalCancelActionLabel('Batal');
     }
 }

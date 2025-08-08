@@ -145,7 +145,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
      */
     public function permohonanInformasiPubliks()
     {
-        return $this->hasMany(PermohonanInformasiPublik::class, 'user_id');
+        return $this->hasMany(PermohonanInformasiPublik::class, 'id_pemohon');
     }
 
     /**
@@ -154,7 +154,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
      */
     public function keberatanInformasiPubliks()
     {
-        return $this->hasMany(KeberatanInformasiPublik::class, 'user_id');
+        return $this->hasMany(KeberatanInformasiPublik::class, 'id_pemohon');
     }
 
     // Relasi ke komentar (komentar yang ditulis oleh user)

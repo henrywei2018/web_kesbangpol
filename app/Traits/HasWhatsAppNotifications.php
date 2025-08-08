@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Traits;
 
 use App\Services\FonteService;
@@ -40,16 +39,21 @@ trait HasWhatsAppNotifications
                     'nama_organisasi' => $this->nama_organisasi ?? null,
                     'email_organisasi' => $this->email_organisasi ?? null,
                 ]),
-                'App\Models\PermohonanInformasiPublik' => $this->kategori_permohonan === 'keberatan' 
-                    ? $fonteService->sendInformationObjectionNotification($user->no_telepon, [
-                        'id' => $this->id,
-                        'nama_lengkap' => $this->nama_lengkap ?? $user->firstname . ' ' . $user->lastname,
-                    ])
-                    : $fonteService->sendInformationRequestNotification($user->no_telepon, [
-                        'id' => $this->id,
-                        'nama_lengkap' => $this->nama_lengkap ?? $user->firstname . ' ' . $user->lastname,
-                    ]),
-                default => ['success' => false, 'error' => 'Unknown model type']
+                'App\Models\PermohonanInformasiPublik' => $fonteService->sendInformationRequestNotification($user->no_telepon, [
+                    'id' => $this->id,
+                    'nama_lengkap' => $this->nama_lengkap ?? $user->firstname . ' ' . $user->lastname,
+                ]),
+                'App\Models\KeberatanInformasiPublik' => $fonteService->sendInformationObjectionNotification($user->no_telepon, [
+                    'id' => $this->id,
+                    'nama_lengkap' => $this->nama_lengkap ?? $user->firstname . ' ' . $user->lastname,
+                ]),
+                'App\Models\LaporATHG' => $fonteService->sendATHGReportNotification($user->no_telepon, [
+                    'id' => $this->id,
+                    'nama_lengkap' => $this->nama_pelapor ?? $user->firstname . ' ' . $user->lastname,
+                    'bidang' => $this->bidang ?? 'Tidak ditentukan',
+                    'tingkat_urgensi' => $this->tingkat_urgensi ?? 'normal',
+                ]),
+                default => ['success' => false, 'error' => 'Unknown model type: ' . get_class($this)]
             };
 
             Log::info('WhatsApp notification sent', [
@@ -89,9 +93,9 @@ trait HasWhatsAppNotifications
             $serviceType = match (get_class($this)) {
                 'App\Models\SKT' => 'skt',
                 'App\Models\SKL' => 'skl',
-                'App\Models\PermohonanInformasiPublik' => $this->kategori_permohonan === 'keberatan' 
-                    ? 'information_objection' 
-                    : 'information_request',
+                'App\Models\PermohonanInformasiPublik' => 'information_request',
+                'App\Models\KeberatanInformasiPublik' => 'information_objection',
+                'App\Models\LaporATHG' => 'athg_report',
                 default => 'unknown'
             };
 

@@ -58,7 +58,7 @@ class Dashboard extends BaseDashboard
         $recentActivities = StatusService::getRecentActivities($userId);
 
         // Get data untuk tabel
-        $permohonanTerbaru = PermohonanInformasiPublik::where('user_id', $userId)
+        $permohonanTerbaru = PermohonanInformasiPublik::where('id_pemohon', $userId)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])

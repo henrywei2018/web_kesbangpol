@@ -16,7 +16,7 @@ class PermohonanInformasiPublik extends Model implements HasMedia
     use HasFactory, HasWhatsAppNotifications, InteractsWithMedia;    
     protected $table = 'permohonan_informasi_publik';
     protected $fillable = [
-        'user_id',
+        'id_pemohon',
         'nomor_register',
         'nik_no_identitas',
         'ktp_path',
@@ -32,7 +32,7 @@ class PermohonanInformasiPublik extends Model implements HasMedia
     ];
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'id_pemohon'); 
     }
     protected static function boot()
     {

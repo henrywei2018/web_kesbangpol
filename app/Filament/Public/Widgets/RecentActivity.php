@@ -20,7 +20,7 @@ class RecentActivity extends Widget
         $recentActivities = collect();
         
         // Get recent permohonan with their latest status
-        $permohonanInformasi = PermohonanInformasiPublik::where('user_id', $user->id)
+        $permohonanInformasi = PermohonanInformasiPublik::where('id_pemohon', $user->id)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
@@ -44,7 +44,7 @@ class RecentActivity extends Widget
         }
         
         // Get recent keberatan with their latest status
-        $keberatanInformasi = KeberatanInformasiPublik::where('user_id', $user->id)
+        $keberatanInformasi = KeberatanInformasiPublik::where('id_pemohon', $user->id)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])

@@ -15,11 +15,11 @@ class StatsOverview extends BaseWidget
         $user = auth()->user();
         
         // Get total counts
-        $totalPermohonan = PermohonanInformasiPublik::where('user_id', $user->id)->count();
-        $totalKeberatan = KeberatanInformasiPublik::where('user_id', $user->id)->count();
+        $totalPermohonan = PermohonanInformasiPublik::where('id_pemohon', $user->id)->count();
+        $totalKeberatan = KeberatanInformasiPublik::where('id_pemohon', $user->id)->count();
         
         // Get permohonan with their latest status using the morph relationship
-        $permohonanData = PermohonanInformasiPublik::where('user_id', $user->id)
+        $permohonanData = PermohonanInformasiPublik::where('id_pemohon', $user->id)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
@@ -39,7 +39,7 @@ class StatsOverview extends BaseWidget
         })->count();
         
         // Get keberatan with their latest status
-        $keberatanData = KeberatanInformasiPublik::where('user_id', $user->id)
+        $keberatanData = KeberatanInformasiPublik::where('id_pemohon', $user->id)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
@@ -81,7 +81,7 @@ class StatsOverview extends BaseWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->startOfDay();
-            $count = PermohonanInformasiPublik::where('user_id', auth()->id())
+            $count = PermohonanInformasiPublik::where('id_pemohon', auth()->id())
                 ->whereDate('created_at', $date)
                 ->count();
             $data[] = $count;

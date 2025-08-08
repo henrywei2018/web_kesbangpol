@@ -64,14 +64,14 @@ class StatusService
     public static function getUserStatistics($userId): array
     {
         // Get permohonan with latest status
-        $permohonanData = PermohonanInformasiPublik::where('user_id', $userId)
+        $permohonanData = PermohonanInformasiPublik::where('id_pemohon', $userId)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
             ->get();
 
         // Get keberatan with latest status
-        $keberatanData = KeberatanInformasiPublik::where('user_id', $userId)
+        $keberatanData = KeberatanInformasiPublik::where('id_pemohon', $userId)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
@@ -159,7 +159,7 @@ class StatusService
         $activities = collect();
 
         // Get recent permohonan
-        $permohonanData = PermohonanInformasiPublik::where('user_id', $userId)
+        $permohonanData = PermohonanInformasiPublik::where('id_pemohon', $userId)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])
@@ -185,7 +185,7 @@ class StatusService
         }
 
         // Get recent keberatan
-        $keberatanData = KeberatanInformasiPublik::where('user_id', $userId)
+        $keberatanData = KeberatanInformasiPublik::where('id_pemohon', $userId)
             ->with(['statuses' => function($query) {
                 $query->latest('created_at')->limit(1);
             }])

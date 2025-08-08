@@ -40,13 +40,11 @@ class LaporATHGResource extends Resource
     {
         return $form
             ->schema([
-                // Single-step form with smart sections
                 Forms\Components\Section::make('Identifikasi ATHG')
                     ->description('Pilih kategori yang paling sesuai dengan situasi yang dilaporkan')
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
-                                // Smart bidang selection with visual indicators
                                 Forms\Components\Select::make('bidang')
                                     ->label('Bidang Terdampak')
                                     ->options(array_map(fn($option) => $option['label'], LaporATHG::getBidangOptions()))
@@ -55,7 +53,6 @@ class LaporATHGResource extends Resource
                                     ->helperText('Pilih bidang yang paling relevan dengan kejadian')
                                     ->live()
                                     ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                        // Auto-suggest urgency level based on bidang
                                         $urgencyMap = [
                                             'keamanan' => 'tinggi',
                                             'kesehatan' => 'tinggi', 
@@ -64,27 +61,41 @@ class LaporATHGResource extends Resource
                                             'budaya' => 'rendah',
                                             'lingkungan' => 'sedang'
                                         ];
-                                        $set('tingkat_urgensi', $urgencyMap[$state] ?? 'sedang');
+                                        $set('tingkat_urgensi', $urgencyMap[$state] ?? 'normal');
                                     }),
 
                                 Forms\Components\Select::make('jenis_athg')
                                     ->label('Jenis ATHG')
                                     ->options(array_map(fn($option) => $option['label'], LaporATHG::getJenisATHGOptions()))
                                     ->required()
-                                    ->helperText('Klasifikasi berdasarkan karakteristik kejadian'),
+                                    ->searchable()
+                                    ->helperText('Pilih jenis yang paling sesuai'),
+
+                                Forms\Components\Select::make('tingkat_urgensi')
+                                    ->label('Tingkat Urgensi')
+                                    ->options(array_map(fn($option) => $option['label'], LaporATHG::getTingkatUrgensiOptions()))
+                                    ->required()
+                                    ->default('normal')
+                                    ->helperText('Akan diisi otomatis berdasarkan bidang'),
                             ]),
                     ]),
 
                 Forms\Components\Section::make('Detail Kejadian')
+                    ->description('Berikan informasi detail tentang kejadian yang dilaporkan')
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('perihal')
-                                    ->label('Perihal (Judul Singkat)')
+                                    ->label('Perihal/Judul Laporan')
                                     ->required()
-                                    ->maxLength(100)
-                                    ->placeholder('Contoh: Gangguan aktivitas ekonomi di...')
-                                    ->helperText('Ringkasan singkat dalam 1 kalimat'),
+                                    ->maxLength(255)
+                                    ->placeholder('Contoh: Dugaan Korupsi Dana Desa'),
+
+                                Forms\Components\TextInput::make('lokasi')
+                                    ->label('Lokasi Kejadian')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('Contoh: Desa Sukamaju, Kecamatan Malinau'),
 
                                 Forms\Components\DatePicker::make('tanggal')
                                     ->label('Tanggal Kejadian')
@@ -93,112 +104,70 @@ class LaporATHGResource extends Resource
                                     ->default(now()),
                             ]),
 
-                        Forms\Components\TextInput::make('lokasi')
-                            ->label('Lokasi Kejadian')
-                            ->required()
-                            ->placeholder('Contoh: Pasar Tradisional ABC, Kelurahan XYZ, Kota...')
-                            ->helperText('Sebutkan lokasi spesifik (nama tempat, alamat, atau koordinat)'),
-
-                        // Smart description with character limits
                         Forms\Components\Textarea::make('deskripsi_singkat')
                             ->label('Deskripsi Singkat')
                             ->required()
                             ->rows(3)
                             ->maxLength(500)
-                            ->placeholder('Jelaskan secara ringkas apa yang terjadi...')
-                            ->helperText('Maksimal 500 karakter - fokus pada fakta utama')
-                            ->live()
-                            ->afterStateUpdated(function ($state, Forms\Components\Textarea $component) {
-                                $length = strlen($state ?? '');
-                                $remaining = 500 - $length;
-                                $component->helperText("Tersisa {$remaining} karakter");
-                            }),
+                            ->placeholder('Jelaskan secara singkat apa yang terjadi'),
 
-                        Forms\Components\RichEditor::make('detail_kejadian')
-                            ->label('Detail Lengkap Kejadian')
+                        Forms\Components\Textarea::make('detail_kejadian')
+                            ->label('Detail Kejadian')
                             ->required()
-                            ->placeholder('Berikan detail lengkap: kronologi, pihak yang terlibat, dampak yang terjadi...')
-                            ->toolbarButtons([
-                                'bold', 'italic', 'bulletList', 'orderedList'
-                            ])
-                            ->helperText('Jelaskan secara detail dan objektif'),
+                            ->rows(5)
+                            ->placeholder('Jelaskan secara detail kronologi kejadian, siapa saja yang terlibat, dan dampak yang ditimbulkan'),
 
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Textarea::make('sumber_informasi')
-                                    ->label('Sumber Informasi')
-                                    ->required()
-                                    ->rows(2)
-                                    ->placeholder('Media sosial, saksi mata, dokumen resmi, dll.')
-                                    ->helperText('Dari mana informasi ini diperoleh'),
+                        Forms\Components\Textarea::make('sumber_informasi')
+                            ->label('Sumber Informasi')
+                            ->rows(2)
+                            ->placeholder('Dari mana Anda mengetahui informasi ini? (opsional)'),
 
-                                Forms\Components\Textarea::make('dampak_potensial')
-                                    ->label('Dampak yang Dikhawatirkan')
-                                    ->rows(2)
-                                    ->placeholder('Dampak yang mungkin terjadi jika tidak ditangani...')
-                                    ->helperText('Opsional: Prediksi dampak ke depan'),
-                            ]),
+                        Forms\Components\Textarea::make('dampak_potensial')
+                            ->label('Dampak Potensial')
+                            ->rows(2)
+                            ->placeholder('Apa dampak yang mungkin terjadi jika tidak ditangani? (opsional)'),
                     ]),
 
-                Forms\Components\Section::make('Tingkat Urgensi & Data Pelapor')
+                Forms\Components\Section::make('Informasi Pelapor')
+                    ->description('Informasi kontak untuk follow-up (akan dijaga kerahasiaannya)')
                     ->schema([
-                        Forms\Components\Grid::make(3)
+                        Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\Select::make('tingkat_urgensi')
-                                    ->label('Tingkat Urgensi')
-                                    ->options(array_map(fn($option) => $option['label'], LaporATHG::getTingkatUrgensiOptions()))
-                                    ->required()
-                                    ->helperText('Seberapa mendesak situasi ini'),
-
                                 Forms\Components\TextInput::make('nama_pelapor')
                                     ->label('Nama Pelapor')
                                     ->required()
-                                    ->default(fn () => auth()->user()->firstname . ' ' . auth()->user()->lastname)
-                                    ->helperText('Nama lengkap pelapor'),
+                                    ->maxLength(255)
+                                    ->default(fn() => auth()->check() ? trim(auth()->user()->firstname . ' ' . auth()->user()->lastname) : ''),
 
                                 Forms\Components\TextInput::make('kontak_pelapor')
-                                    ->label('Kontak')
+                                    ->label('Kontak (HP/Email)')
                                     ->required()
-                                    ->default(fn () => auth()->user()->no_telepon)
-                                    ->placeholder('Nomor HP atau email')
-                                    ->helperText('Kontak yang dapat dihubungi'),
+                                    ->maxLength(255)
+                                    ->default(fn() => auth()->check() ? (auth()->user()->no_telepon ?: auth()->user()->email) : '')
+                                    ->placeholder('08123456789 atau email@domain.com'),
                             ]),
-
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(auth()->id()),
                     ]),
 
-                // Progress indicator for form completion
-                Forms\Components\Section::make('Tips Pelaporan')
-                    ->collapsed()
-                    ->schema([
-                        Forms\Components\Placeholder::make('tips')
-                            ->content(new HtmlString('
-                                <div class="text-sm space-y-2">
-                                    <p><strong>💡 Tips untuk laporan yang efektif:</strong></p>
-                                    <ul class="list-disc list-inside space-y-1 text-gray-600">
-                                        <li>Gunakan bahasa yang jelas dan objektif</li>
-                                        <li>Sertakan detail waktu, tempat, dan pihak yang terlibat</li>
-                                        <li>Lampirkan bukti jika tersedia (foto, dokumen, screenshot)</li>
-                                        <li>Hindari asumsi atau opini pribadi</li>
-                                        <li>Fokus pada fakta yang dapat diverifikasi</li>
-                                    </ul>
-                                </div>
-                            ')),
-                    ]),
+                // Hidden fields
+                Forms\Components\Hidden::make('user_id')
+                    ->default(fn() => auth()->id()),
+
+                Forms\Components\Hidden::make('status_athg')
+                    ->default('pending'),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(
+                LaporATHG::query()->where('user_id', auth()->id())
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('lapathg_id')
                     ->label('ID Laporan')
                     ->searchable()
-                    ->sortable()
-                    ->weight(FontWeight::Medium)
-                    ->copyable(),
+                    ->weight(FontWeight::Bold),
 
                 Tables\Columns\TextColumn::make('perihal')
                     ->label('Perihal')
@@ -206,7 +175,10 @@ class LaporATHGResource extends Resource
                     ->limit(40)
                     ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
                         $state = $column->getState();
-                        return strlen($state) > 40 ? $state : null;
+                        if (strlen($state) <= 40) {
+                            return null;
+                        }
+                        return $state;
                     }),
 
                 Tables\Columns\TextColumn::make('bidang')
@@ -271,8 +243,7 @@ class LaporATHGResource extends Resource
                 Tables\Actions\CreateAction::make()
                     ->label('Buat Laporan ATHG')
                     ->icon('heroicon-o-plus'),
-            ])
-            ->defaultSort('created_at', 'desc');
+            ]);
     }
 
     public static function getPages(): array
@@ -287,16 +258,6 @@ class LaporATHGResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-
-        if (auth()->user()->hasRole('super_admin')) {
-            return $query;
-        }
-
-        if (auth()->user()->hasRole('public')) {
-            return $query->where('user_id', auth()->user()->id);
-        }
-
-        return $query->where('id', -1);
+        return parent::getEloquentQuery()->where('user_id', auth()->id());
     }
 }
