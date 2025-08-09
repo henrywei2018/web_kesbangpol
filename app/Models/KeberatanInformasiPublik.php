@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\StatusLayanan;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\HasMedia;
-use App\Traits\HasWhatsAppNotifications;
+use App\Traits\HasStatusUpdateNotifications;
 
 
 class KeberatanInformasiPublik extends Model implements HasMedia
 {
-    use HasFactory, HasWhatsAppNotifications, InteractsWithMedia;
+    use HasFactory, HasStatusUpdateNotifications, InteractsWithMedia;
 
     protected $table = 'keberatan_informasi_publik';
     
@@ -43,6 +43,16 @@ class KeberatanInformasiPublik extends Model implements HasMedia
     public function statuses()
     {
         return $this->morphMany(StatusLayanan::class, 'layanan')->orderBy('created_at', 'desc');
+    }
+    public function getCustomStatusOptions(): array
+    {
+        return [
+            'pending' => 'Pending',
+            'diproses' => 'Diproses',
+            'approved' => 'Disetujui',
+            'rejected' => 'Ditolak',
+            'completed' => 'Selesai',
+        ];
     }
 
     public function getLatestStatusAttribute()

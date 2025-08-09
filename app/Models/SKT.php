@@ -10,11 +10,11 @@ use App\Models\SKTDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia; 
-use App\Traits\HasWhatsAppNotifications;
+use App\Traits\HasStatusUpdateNotifications;
 
 class SKT extends Model implements HasMedia
 {
-    use InteractsWithMedia, HasFactory, HasWhatsAppNotifications;
+    use InteractsWithMedia, HasFactory, HasStatusUpdateNotifications;
 
     // The table associated with the model
     protected $table = 'skts';
@@ -88,6 +88,16 @@ class SKT extends Model implements HasMedia
 
         return $data;
     }
+    public function getCustomStatusOptions(): array
+    {
+        return [
+            'pengajuan' => 'Pengajuan',
+            'perbaikan' => 'Perbaikan',
+            'diproses' => 'Diproses',
+            'terbit' => 'Terbit',
+            'ditolak' => 'Ditolak',
+        ];
+    }
 
     public function registerMediaConversions(Media $media = null): void
     {
@@ -144,12 +154,6 @@ class SKT extends Model implements HasMedia
     protected static function boot()
     {
         parent::boot();
-
-        // Send WhatsApp notification when SKT is created
-        static::created(function ($skt) {
-            // Send notification
-            $skt->sendCreationNotification();
-        });
     }
     
 

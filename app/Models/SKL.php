@@ -10,11 +10,11 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Models\DocumentLabel;
 use App\Models\SKLDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\HasWhatsAppNotifications;
+use App\Traits\HasStatusUpdateNotifications;
 
 class SKL extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia, HasWhatsAppNotifications;
+    use HasFactory, InteractsWithMedia, HasStatusUpdateNotifications;
     protected $table = 'skls';
     const STATUS_PENGAJUAN = 'pengajuan';
 
@@ -35,6 +35,16 @@ class SKL extends Model implements HasMedia
         $data['id_pemohon'] = Auth::id(); // atau auth()->user()->id;
 
         return $data;
+    }
+    public function getCustomStatusOptions(): array
+    {
+        return [
+            'pengajuan' => 'Pengajuan',
+            'perbaikan' => 'Perbaikan',
+            'diproses' => 'Diproses',
+            'terbit' => 'Terbit',
+            'ditolak' => 'Ditolak',
+        ];
     }
     public function registerMediaCollections(): void
     {
@@ -88,10 +98,6 @@ class SKL extends Model implements HasMedia
     protected static function boot()
     {
         parent::boot();
-
-        static::created(function ($skl) {
-            $skl->sendCreationNotification();
-        });
     }
     
 

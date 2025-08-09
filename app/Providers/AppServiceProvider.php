@@ -9,13 +9,18 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
-use App\Observers\WhatsAppObserver;
+
+// Import Models for Observer Registration
 use App\Models\SKT;
 use App\Models\SKL;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\KeberatanInformasiPublik;
-use App\Observers\SKTObserver;
-use App\Observers\SKLObserver;
+use App\Models\LaporATHG; // ✅ ADD this import
+
+// Import Observers
+use App\Observers\WhatsAppObserver;
+use App\Observers\SKTObserver; // Keep existing SKT observer for ORMAS logic
+use App\Observers\SKLObserver; // SKL observer for ORMAS logic
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->registerObservers();
+        // Configure Filament Tables
         Table::configureUsing(function (Table $table): void {
             $table
                 ->emptyStateHeading('No data yet')
@@ -39,40 +44,62 @@ class AppServiceProvider extends ServiceProvider
                 ->extremePaginationLinks()
                 ->defaultSort('created_at', 'desc');
         });
+
+        // Set Carbon locale
         Carbon::setLocale('id');
         
+        // Configure Turnstile
         $siteKey = strval(Config::get('services.turnstile.sitekey'));
         View::share('siteKey', config('services.turnstile.sitekey'));
 
-        // Or use view composer if you prefer
         View::composer(['*'], function ($view) {
             $view->with('siteKey', config('services.turnstile.sitekey'));
         });
+
+        // Register Model Observers
+        $this->registerObservers();
     }
+
+    /**
+     * Register all model observers
+     */
     private function registerObservers(): void
     {
-        // WhatsApp notifications observer
-        $whatsappObserver = app(WhatsAppObserver::class);
-        
-        // Register WhatsApp observer methods for each model
-        SKT::observe([
-            'created' => [$whatsappObserver, 'sktCreated'],
-        ]);
-
-        SKL::observe([
-            'created' => [$whatsappObserver, 'sklCreated'],
-        ]);
-
-        PermohonanInformasiPublik::observe([
-            'created' => [$whatsappObserver, 'permohonanInformasiPublikCreated'],
-        ]);
-
-        KeberatanInformasiPublik::observe([
-            'created' => [$whatsappObserver, 'keberatanInformasiPublikCreated'],
-        ]);
-
-        // ORMAS business logic observers for both SKT and SKL
+        // ✅ Register business logic observers first (these are traditional observer classes)
         SKT::observe(SKTObserver::class);  // SKT → ORMAS logic
         SKL::observe(SKLObserver::class);  // SKL → ORMAS logic
+        
+        // ✅ Register WhatsApp notifications using created event
+        $this->registerWhatsAppNotifications();
+    }
+
+    /**
+     * Register WhatsApp notification events
+     */
+    private function registerWhatsAppNotifications(): void
+    {
+        // Get WhatsApp observer instance
+        $whatsappObserver = app(WhatsAppObserver::class);
+        
+        // Register created events for WhatsApp notifications
+        SKT::created(function ($skt) use ($whatsappObserver) {
+            $whatsappObserver->sktCreated($skt);
+        });
+
+        SKL::created(function ($skl) use ($whatsappObserver) {
+            $whatsappObserver->sklCreated($skl);
+        });
+
+        PermohonanInformasiPublik::created(function ($permohonan) use ($whatsappObserver) {
+            $whatsappObserver->permohonanInformasiPublikCreated($permohonan);
+        });
+
+        KeberatanInformasiPublik::created(function ($keberatan) use ($whatsappObserver) {
+            $whatsappObserver->keberatanInformasiPublikCreated($keberatan);
+        });
+
+        LaporATHG::created(function ($laporATHG) use ($whatsappObserver) {
+            $whatsappObserver->laporATHGCreated($laporATHG);
+        });
     }
 }
