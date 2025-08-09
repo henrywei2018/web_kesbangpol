@@ -14,9 +14,18 @@ class FonteService
 
     public function __construct()
     {
-        // Get settings from database instead of config
-        $this->apiUrl = $this->getSetting('whatsapp.api_url', 'https://api.fonnte.com/send');
-        $this->token = $this->getSetting('whatsapp.token');
+        // Get settings from database instead of config - ensure clean URL
+        $this->apiUrl = trim($this->getSetting('whatsapp.api_url', 'https://api.fonnte.com/send'));
+        $this->token = trim($this->getSetting('whatsapp.token'));
+        
+        // Clean up any quotes or extra characters from URL
+        $this->apiUrl = str_replace(['"', "'", '%22'], '', $this->apiUrl);
+        
+        // Ensure URL has proper format
+        if (!filter_var($this->apiUrl, FILTER_VALIDATE_URL)) {
+            Log::error('Invalid Fonnte API URL', ['url' => $this->apiUrl]);
+            $this->apiUrl = 'https://api.fonnte.com/send'; // fallback
+        }
     }
 
     /**
@@ -342,6 +351,7 @@ class FonteService
             default => 'Layanan'
         };
     }
+
     /**
      * Format phone number to international format
      */

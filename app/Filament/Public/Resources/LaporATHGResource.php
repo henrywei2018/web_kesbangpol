@@ -165,56 +165,111 @@ class LaporATHGResource extends Resource
             )
             ->columns([
                 Tables\Columns\TextColumn::make('lapathg_id')
-                    ->label('ID Laporan')
-                    ->searchable()
-                    ->weight(FontWeight::Bold),
+    ->label('ID Laporan')
+    ->searchable()
+    ->sortable()
+    ->weight(FontWeight::Medium)
+    ->copyable(),
 
-                Tables\Columns\TextColumn::make('perihal')
-                    ->label('Perihal')
-                    ->searchable()
-                    ->limit(40)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 40) {
-                            return null;
-                        }
-                        return $state;
-                    }),
+Tables\Columns\TextColumn::make('perihal')
+    ->label('Perihal')
+    ->searchable()
+    ->limit(40)
+    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
+        $state = $column->getState();
+        return strlen($state) > 40 ? $state : null;
+    }),
 
-                Tables\Columns\TextColumn::make('bidang')
-                    ->label('Bidang')
-                    ->badge()
-                    ->color(fn ($record) => $record->getBidangInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getBidangInfo()['label'] ?? $record->bidang),
+Tables\Columns\TextColumn::make('bidang')
+    ->label('Bidang')
+    ->badge()
+    ->color(function ($record) {
+        try {
+            $info = $record->getBidangInfo();
+            return $info['color'] ?? 'gray';
+        } catch (\Exception $e) {
+            return 'gray';
+        }
+    })
+    ->formatStateUsing(function ($record) {
+        try {
+            $info = $record->getBidangInfo();
+            return $info['label'] ?? ucfirst((string) $record->bidang) ?? 'N/A';
+        } catch (\Exception $e) {
+            return 'Error';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('jenis_athg')
-                    ->label('Jenis')
-                    ->badge()
-                    ->color(fn ($record) => $record->getJenisInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getJenisInfo()['label'] ?? $record->jenis_athg),
+Tables\Columns\TextColumn::make('jenis_athg')
+    ->label('Jenis')
+    ->badge()
+    ->color(function ($record) {
+        try {
+            $info = $record->getJenisInfo();
+            return $info['color'] ?? 'gray';
+        } catch (\Exception $e) {
+            return 'gray';
+        }
+    })
+    ->formatStateUsing(function ($record) {
+        try {
+            $info = $record->getJenisInfo();
+            return $info['label'] ?? ucfirst((string) $record->jenis_athg) ?? 'N/A';
+        } catch (\Exception $e) {
+            return 'Error';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('tingkat_urgensi')
-                    ->label('Urgensi')
-                    ->badge()
-                    ->color(fn ($record) => $record->getTingkatUrgensiInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getTingkatUrgensiInfo()['label'] ?? $record->tingkat_urgensi),
+Tables\Columns\TextColumn::make('tingkat_urgensi')
+    ->label('Urgensi')
+    ->badge()
+    ->color(function ($record) {
+        try {
+            $info = $record->getTingkatUrgensiInfo();
+            return $info['color'] ?? 'gray';
+        } catch (\Exception $e) {
+            return 'gray';
+        }
+    })
+    ->formatStateUsing(function ($record) {
+        try {
+            $info = $record->getTingkatUrgensiInfo();
+            return $info['label'] ?? ucfirst((string) $record->tingkat_urgensi) ?? 'N/A';
+        } catch (\Exception $e) {
+            return 'Error';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('status_athg')
-                    ->label('Status')
-                    ->badge()
-                    ->color(fn ($record) => $record->getStatusInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getStatusInfo()['label'] ?? $record->status_athg),
+Tables\Columns\TextColumn::make('status_athg')
+    ->label('Status')
+    ->badge()
+    ->color(function ($record) {
+        try {
+            $info = $record->getStatusInfo();
+            return $info['color'] ?? 'gray';
+        } catch (\Exception $e) {
+            return 'gray';
+        }
+    })
+    ->formatStateUsing(function ($record) {
+        try {
+            $info = $record->getStatusInfo();
+            return $info['label'] ?? ucfirst(str_replace('_', ' ', (string) $record->status_athg)) ?? 'N/A';
+        } catch (\Exception $e) {
+            return 'Error';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('tanggal')
-                    ->label('Tanggal')
-                    ->date('d M Y')
-                    ->sortable(),
+Tables\Columns\TextColumn::make('tanggal')
+    ->label('Tanggal')
+    ->date('d M Y')
+    ->sortable(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dilaporkan')
-                    ->dateTime('d M Y, H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+Tables\Columns\TextColumn::make('created_at')
+    ->label('Dilaporkan')
+    ->dateTime('d M Y, H:i')
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('bidang')
