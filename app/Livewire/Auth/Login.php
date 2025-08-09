@@ -167,7 +167,7 @@ class Login extends Component
         
         // Redirect based on user role
         $redirectUrl = $this->getRedirectUrl($user);
-        $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 1500);
+        $this->dispatch('redirect-after-delay', url: $redirectUrl, delay: 200);
     }
 
     /**
@@ -176,9 +176,9 @@ class Login extends Component
     protected function getRedirectUrl(User $user)
     {
         if ($user->hasRole('super_admin')) {
-            return '/admin';
-        } elseif ($user->hasRole(['admin', 'editor'])) {
-            return '/admin';
+            return '/admin/dashboard';
+        } elseif ($user->hasRole(['admin', 'editor',])) {
+            return '/admin/dashboard';
         } else {
             return '/panel';
         }

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Public\Resources;
+namespace App\Filament\Resources;
 
-use App\Filament\Public\Resources\KeberatanInformasiPublikResource\Pages;
+use App\Filament\Resources\KeberatanInformasiPublikResource\Pages;
 use App\Models\KeberatanInformasiPublik;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -23,11 +23,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class KeberatanInformasiPublikResource extends Resource
 {
     protected static ?string $model = KeberatanInformasiPublik::class;
-    protected static ?string $slug = 'keberatan-informasi';
+
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationLabel = 'Keberatan Informasi Publik';
+    public static function getNavigationLabel(): string
+    {
+        return 'Keberatan Informasi';
+    }
     protected static ?string $navigationGroup = 'PPID';
-    protected static ?int $navigationSort = 2;
 
     public static function form(Forms\Form $form): Forms\Form
     {
@@ -45,7 +47,7 @@ class KeberatanInformasiPublikResource extends Resource
                                             ->relationship(
                                                 'permohonan',
                                                 'nomor_register',
-                                                fn(Builder $query) => $query->where('id_pemohon', auth()->id())
+                                                fn(Builder $query) => $query->where('user_id', auth()->id())
                                             )
                                             ->required()
                                             ->searchable()

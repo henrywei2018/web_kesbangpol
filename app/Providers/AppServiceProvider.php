@@ -9,10 +9,6 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
-use App\Models\SKT;
-use App\Models\SKL;
-use App\Observers\SKTObserver;
-use App\Observers\SKLObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,8 +32,6 @@ class AppServiceProvider extends ServiceProvider
                 ->defaultSort('created_at', 'desc');
         });
         Carbon::setLocale('id');
-        SKT::observe(SKTObserver::class);
-        SKL::observe(SKLObserver::class);
         
         $siteKey = strval(Config::get('services.turnstile.sitekey'));
         View::share('siteKey', config('services.turnstile.sitekey'));

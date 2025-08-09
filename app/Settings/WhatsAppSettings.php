@@ -22,4 +22,18 @@ class WhatsAppSettings extends Settings
     {
         return 'whatsapp';
     }
+    public static function defaults(): array
+    {
+        return [
+            'enabled'      => false,
+            'api_url'      => '',
+            'token'        => '',
+            'admin_main'   => null,
+            'admin_backup' => null,
+            'admin_skt'    => null,
+            'admin_skl'    => null,
+            'admin_ppid'   => null,
+            'admin_athg'   => null,
+        ];
+    }
 }
