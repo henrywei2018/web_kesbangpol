@@ -190,7 +190,7 @@ class OtpService
                 'no_ktp' => null,
                 'domisili' => null,
                 'alamat' => null,
-                'no_telepon' => null,
+                'no_telepon' => $registrationData['no_telepon'],
             ]);
 
             // Assign default role

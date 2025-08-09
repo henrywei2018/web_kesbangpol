@@ -17,6 +17,7 @@ class FonteService
         // Get settings from database instead of config - ensure clean URL
         $this->apiUrl = trim($this->getSetting('whatsapp.api_url', 'https://api.fonnte.com/send'));
         $this->token = trim($this->getSetting('whatsapp.token'));
+        $this->token = trim($this->token, '"\'');
         
         // Clean up any quotes or extra characters from URL
         $this->apiUrl = str_replace(['"', "'", '%22'], '', $this->apiUrl);
