@@ -2,22 +2,48 @@
 
 namespace App\Services;
 
-use App\Settings\WhatsAppSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class FonteService
 {
     private string $apiUrl;
     private string $token;
-    private WhatsAppSettings $settings;
 
     public function __construct()
     {
-        $this->settings = app(WhatsAppSettings::class);
-        $this->apiUrl = $this->settings->api_url ?? 'https://api.fonnte.com/send';
-        $this->token = $this->settings->token ?? '';
+        // Get settings from database instead of config
+        $this->apiUrl = $this->getSetting('whatsapp.api_url', 'https://api.fonnte.com/send');
+        $this->token = $this->getSetting('whatsapp.token');
+    }
+
+    /**
+     * Get setting value from database
+     */
+    private function getSetting(string $key, string $default = ''): string
+    {
+        try {
+            $setting = DB::table('settings')
+                ->where('group', 'whatsapp')
+                ->where('name', str_replace('whatsapp.', '', $key))
+                ->first();
+            
+            return $setting ? $setting->payload : $default;
+        } catch (Exception $e) {
+            Log::warning('Failed to get setting', ['key' => $key, 'error' => $e->getMessage()]);
+            return $default;
+        }
+    }
+
+    /**
+     * Check if WhatsApp notifications are enabled
+     */
+    private function isEnabled(): bool
+    {
+        $enabled = $this->getSetting('whatsapp.enabled', 'false');
+        return $enabled === 'true' || $enabled === '1';
     }
 
     /**
@@ -25,6 +51,24 @@ class FonteService
      */
     public function sendMessage(string $target, string $message, array $options = []): array
     {
+        // Check if WhatsApp is enabled
+        if (!$this->isEnabled()) {
+            Log::info('WhatsApp notifications disabled');
+            return [
+                'success' => false,
+                'error' => 'WhatsApp notifications are disabled'
+            ];
+        }
+
+        // Check if token is configured
+        if (empty($this->token)) {
+            Log::error('WhatsApp token not configured');
+            return [
+                'success' => false,
+                'error' => 'WhatsApp token not configured'
+            ];
+        }
+
         try {
             // Validate phone number format
             $target = $this->formatPhoneNumber($target);
@@ -85,90 +129,148 @@ class FonteService
     }
 
     /**
-     * Send notification to both user and admin
+     * Send SKT creation notification
      */
-    private function sendDualNotification(string $userPhone, string $userMessage, string $adminMessage, string $serviceType = 'main'): array
+    public function sendSKTNotification(string $target, array $data): array
     {
-        $results = [
-            'user' => ['success' => false],
-            'admin' => ['success' => false],
-            'overall_success' => false
-        ];
+        $template = $this->getSetting('whatsapp.skt_template', 
+            "🔔 *Notifikasi SKT*\n\nHalo! Permohonan SKT Anda telah diterima dan sedang diproses.\n\n📋 *Detail Permohonan:*\n• ID: {id}\n• Nama Ormas: {nama_ormas}\n• Jenis: {jenis_permohonan}\n\n✅ Tim kami akan segera memproses permohonan Anda.\n\nTerima kasih atas kepercayaan Anda! 🙏"
+        );
 
-        // Check if WhatsApp is enabled
-        if (!$this->settings->enabled) {
-            Log::info('WhatsApp notifications disabled in settings');
-            return $results;
-        }
-
-        // Send to user
-        if ($userPhone) {
-            $results['user'] = $this->sendMessage($userPhone, $userMessage);
-            Log::info('User notification sent', [
-                'phone' => $userPhone,
-                'success' => $results['user']['success']
-            ]);
-        }
-
-        // Send to admin(s)
-        $adminPhones = $this->getAdminPhones($serviceType);
-        $adminResults = [];
+        $message = str_replace(
+            ['{id}', '{nama_ormas}', '{jenis_permohonan}'],
+            [$data['id'], $data['nama_ormas'], $data['jenis_permohonan']],
+            $template
+        );
         
-        foreach ($adminPhones as $adminPhone) {
-            if ($adminPhone && $adminPhone !== $userPhone) { // Don't send duplicate if user is admin
-                $adminResult = $this->sendMessage($adminPhone, $adminMessage);
-                $adminResults[] = $adminResult;
-                
-                Log::info('Admin notification sent', [
-                    'phone' => $adminPhone,
-                    'service_type' => $serviceType,
-                    'success' => $adminResult['success']
-                ]);
-            }
-        }
-
-        $results['admin'] = [
-            'success' => !empty($adminResults) && collect($adminResults)->where('success', true)->isNotEmpty(),
-            'results' => $adminResults
-        ];
-
-        // Overall success if either user or admin notification succeeded
-        $results['overall_success'] = $results['user']['success'] || $results['admin']['success'];
-
-        return $results;
+        return $this->sendMessage($target, $message);
     }
 
     /**
-     * Get admin phone numbers for specific service type
+     * Send SKL creation notification
      */
-    private function getAdminPhones(string $serviceType = 'main'): array
+    public function sendSKLNotification(string $target, array $data): array
     {
-        $phones = [];
+        $template = $this->getSetting('whatsapp.skl_template',
+            "🔔 *Notifikasi SKL*\n\nHalo! Permohonan SKL Anda telah diterima dan sedang diproses.\n\n📋 *Detail Permohonan:*\n• ID: {id}\n• Nama Organisasi: {nama_organisasi}\n\n✅ Tim kami akan segera memproses permohonan Anda.\n\nTerima kasih atas kepercayaan Anda! 🙏"
+        );
 
-        // Add main admin (always gets notifications)
-        if ($this->settings->admin_main) {
-            $phones[] = $this->settings->admin_main;
+        $message = str_replace(
+            ['{id}', '{nama_organisasi}'],
+            [$data['id'], $data['nama_organisasi'] ?? 'N/A'],
+            $template
+        );
+        
+        return $this->sendMessage($target, $message);
+    }
+
+    /**
+     * Send Information Request notification
+     */
+    public function sendInformationRequestNotification(string $target, array $data): array
+    {
+        $template = $this->getSetting('whatsapp.info_request_template',
+            "🔔 *Notifikasi Permohonan Informasi Publik*\n\nHalo {nama_lengkap}!\n\nPermohonan informasi publik Anda telah diterima dan sedang diproses.\n\n📋 *Detail Permohonan:*\n• ID: {id}\n• Nama: {nama_lengkap}\n\n✅ Tim kami akan segera memproses permohonan Anda sesuai dengan ketentuan yang berlaku.\n\nTerima kasih atas kepercayaan Anda! 🙏"
+        );
+
+        $message = str_replace(
+            ['{id}', '{nama_lengkap}'],
+            [$data['id'], $data['nama_lengkap']],
+            $template
+        );
+        
+        return $this->sendMessage($target, $message);
+    }
+
+    /**
+     * Send Information Objection notification
+     */
+    public function sendInformationObjectionNotification(string $target, array $data): array
+    {
+        $template = $this->getSetting('whatsapp.info_objection_template',
+            "🔔 *Notifikasi Keberatan Informasi Publik*\n\nHalo {nama_lengkap}!\n\nKeberatan informasi publik Anda telah diterima dan sedang ditinjau.\n\n📋 *Detail Keberatan:*\n• ID: {id}\n• Nama: {nama_lengkap}\n\n✅ Tim kami akan segera meninjau keberatan Anda sesuai dengan prosedur yang berlaku.\n\nTerima kasih atas kepercayaan Anda! 🙏"
+        );
+
+        $message = str_replace(
+            ['{id}', '{nama_lengkap}'],
+            [$data['id'], $data['nama_lengkap']],
+            $template
+        );
+        
+        return $this->sendMessage($target, $message);
+    }
+
+    /**
+     * Send status update notification
+     */
+    public function sendStatusUpdate(string $target, string $serviceType, array $data): array
+    {
+        $serviceNames = [
+            'skt' => 'SKT',
+            'skl' => 'SKL',
+            'information_request' => 'Permohonan Informasi Publik',
+            'information_objection' => 'Keberatan Informasi Publik'
+        ];
+
+        $serviceName = $serviceNames[$serviceType] ?? 'Layanan';
+
+        $template = $this->getSetting('whatsapp.status_update_template',
+            "📢 *Update Status {service_name}*\n\n🆔 ID: {id}\n📊 Status: *{status}*\n\n📝 Keterangan: {keterangan}\n\n⏰ Diperbarui: {timestamp}\n\nTerima kasih! 🙏"
+        );
+
+        $message = str_replace(
+            ['{service_name}', '{id}', '{status}', '{keterangan}', '{timestamp}'],
+            [
+                $serviceName,
+                $data['id'],
+                $data['status'],
+                $data['keterangan'] ?? '-',
+                now()->format('d/m/Y H:i')
+            ],
+            $template
+        );
+        
+        return $this->sendMessage($target, $message);
+    }
+
+    /**
+     * Send admin notification for new submissions
+     */
+    public function sendAdminNotification(string $serviceType, array $data): array
+    {
+        // Get admin phone from settings
+        $adminPhone = $this->getSetting('whatsapp.admin_main');
+        
+        if (empty($adminPhone)) {
+            Log::info('Admin WhatsApp notification skipped - no admin phone configured');
+            return ['success' => false, 'error' => 'No admin phone configured'];
         }
 
-        // Add service-specific admin
-        $serviceAdminPhone = match($serviceType) {
-            'skt' => $this->settings->admin_skt,
-            'skl' => $this->settings->admin_skl,
-            'ppid' => $this->settings->admin_ppid,
-            'athg' => $this->settings->admin_athg,
-            default => null
-        };
+        $serviceNames = [
+            'skt' => 'SKT',
+            'skl' => 'SKL',
+            'information_request' => 'Permohonan Informasi Publik',
+            'information_objection' => 'Keberatan Informasi Publik'
+        ];
 
-        if ($serviceAdminPhone) {
-            $phones[] = $serviceAdminPhone;
-        }
+        $serviceName = $serviceNames[$serviceType] ?? 'Layanan';
 
-        // Add backup admin if no specific admin found and no main admin
-        if (empty($phones) && $this->settings->admin_backup) {
-            $phones[] = $this->settings->admin_backup;
-        }
+        $template = $this->getSetting('whatsapp.admin_notification_template',
+            "🔔 *Notifikasi Admin - {service_name} Baru*\n\nAda pengajuan {service_name} baru yang perlu ditinjau:\n\n🆔 ID: {id}\n👤 Pemohon: {nama_pemohon}\n\n⏰ Waktu: {timestamp}\n\nSilakan cek panel admin untuk detail lengkap."
+        );
 
-        return array_unique(array_filter($phones));
+        $message = str_replace(
+            ['{service_name}', '{id}', '{nama_pemohon}', '{timestamp}'],
+            [
+                $serviceName,
+                $data['id'],
+                $data['nama_pemohon'] ?? 'N/A',
+                now()->format('d/m/Y H:i')
+            ],
+            $template
+        );
+        
+        return $this->sendMessage($adminPhone, $message);
     }
 
     /**
@@ -188,17 +290,17 @@ class FonteService
             // Convert 08xxx to 628xxx
             $phone = '628' . substr($phone, 2);
         } elseif (str_starts_with($phone, '8')) {
-            // Convert 8xxx to 628xxx
+            // Add 62 prefix for numbers starting with 8
             $phone = '62' . $phone;
         } elseif (str_starts_with($phone, '0')) {
-            // Convert 0xxx to 62xxx
+            // Replace leading 0 with 62
             $phone = '62' . substr($phone, 1);
         } elseif (!str_starts_with($phone, '62')) {
             // Add 62 prefix if not present
             $phone = '62' . $phone;
         }
 
-        // Validate minimum length (Indonesian mobile numbers)
+        // Validate length (Indonesian numbers should be 10-15 digits with country code)
         if (strlen($phone) < 10 || strlen($phone) > 15) {
             return null;
         }
@@ -206,383 +308,83 @@ class FonteService
         return $phone;
     }
 
-    // ===================== DUAL NOTIFICATION METHODS =====================
-
     /**
-     * Send notification for SKT submission - DUAL VERSION
+     * Test connection to Fonnte API
      */
-    public function sendSKTNotification(string $phoneNumber, array $data): array
+    public function testConnection(): array
     {
-        $userMessage = $this->buildSKTMessage($data);
-        $adminMessage = $this->buildSKTAdminMessage($data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, 'skt');
-    }
-
-    /**
-     * Send notification for SKL submission - DUAL VERSION
-     */
-    public function sendSKLNotification(string $phoneNumber, array $data): array
-    {
-        $userMessage = $this->buildSKLMessage($data);
-        $adminMessage = $this->buildSKLAdminMessage($data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, 'skl');
-    }
-
-    /**
-     * Send notification for Information Request submission - DUAL VERSION
-     */
-    public function sendInformationRequestNotification(string $phoneNumber, array $data): array
-    {
-        $userMessage = $this->buildInformationRequestMessage($data);
-        $adminMessage = $this->buildInformationRequestAdminMessage($data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, 'ppid');
-    }
-
-    /**
-     * Send notification for Information Objection submission - DUAL VERSION
-     */
-    public function sendInformationObjectionNotification(string $phoneNumber, array $data): array
-    {
-        $userMessage = $this->buildInformationObjectionMessage($data);
-        $adminMessage = $this->buildInformationObjectionAdminMessage($data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, 'ppid');
-    }
-
-    /**
-     * Send notification for ATHG Report submission - DUAL VERSION
-     */
-    public function sendATHGReportNotification(string $phoneNumber, array $data): array
-    {
-        $userMessage = $this->buildATHGMessage($data);
-        $adminMessage = $this->buildATHGAdminMessage($data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, 'athg');
-    }
-
-    /**
-     * Send status update notification (for both user and admin)
-     */
-    public function sendStatusUpdateNotification(string $phoneNumber, string $serviceType, array $data): array
-    {
-        $userMessage = $this->buildStatusUpdateMessage($serviceType, $data);
-        $adminMessage = $this->buildStatusUpdateAdminMessage($serviceType, $data);
-        
-        return $this->sendDualNotification($phoneNumber, $userMessage, $adminMessage, $serviceType);
-    }
-
-    // ===================== USER MESSAGE BUILDERS =====================
-
-    /**
-     * Build SKT submission message for user
-     */
-    private function buildSKTMessage(array $data): string
-    {
-        $namaOrmas = $data['nama_ormas'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🏢 *POKUSKALTARA - Konfirmasi Pengajuan SKT*\n\n" .
-               "Halo,\n\n" .
-               "Pengajuan Surat Keterangan Terdaftar (SKT) Anda telah berhasil diterima:\n\n" .
-               "📋 *Detail Pengajuan:*\n" .
-               "• Nama ORMAS: {$namaOrmas}\n" .
-               "• Tanggal Submit: {$tanggalSubmit}\n" .
-               "• ID Pengajuan: {$nomorRegistrasi}\n" .
-               "• Jenis: " . ($data['jenis_permohonan'] ?? 'Pendaftaran') . "\n\n" .
-               "📌 *Status:* Sedang dalam proses review\n\n" .
-               "Kami akan memproses pengajuan Anda dalam 1-3 hari kerja. " .
-               "Silakan pantau status melalui dashboard atau hubungi kami untuk informasi lebih lanjut.\n\n" .
-               "Terima kasih atas kepercayaan Anda.\n\n" .
-               "Hormat kami,\n" .
-               "*Tim POKUSKALTARA*\n" .
-               "Pemerintah Provinsi Kalimantan Utara";
-    }
-
-    /**
-     * Build SKL submission message for user
-     */
-    private function buildSKLMessage(array $data): string
-    {
-        $namaOrganisasi = $data['nama_organisasi'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "📜 *POKUSKALTARA - Konfirmasi Pengajuan SKL*\n\n" .
-               "Halo,\n\n" .
-               "Pengajuan Surat Keterangan Lunas (SKL) Anda telah berhasil diterima:\n\n" .
-               "📋 *Detail Pengajuan:*\n" .
-               "• Nama Organisasi: {$namaOrganisasi}\n" .
-               "• Tanggal Submit: {$tanggalSubmit}\n" .
-               "• ID Pengajuan: {$nomorRegistrasi}\n\n" .
-               "📌 *Status:* Sedang dalam proses review\n\n" .
-               "Kami akan memproses pengajuan Anda dalam 1-3 hari kerja. " .
-               "Silakan pantau status melalui dashboard atau hubungi kami untuk informasi lebih lanjut.\n\n" .
-               "Terima kasih atas kepercayaan Anda.\n\n" .
-               "Hormat kami,\n" .
-               "*Tim POKUSKALTARA*\n" .
-               "Pemerintah Provinsi Kalimantan Utara";
-    }
-
-    /**
-     * Build Information Request message for user
-     */
-    private function buildInformationRequestMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "📄 *PPID KALTARA - Konfirmasi Permohonan Informasi*\n\n" .
-               "Halo {$namaLengkap},\n\n" .
-               "Permohonan informasi publik Anda telah berhasil diterima:\n\n" .
-               "📋 *Detail Permohonan:*\n" .
-               "• Nama Pemohon: {$namaLengkap}\n" .
-               "• Tanggal Submit: {$tanggalSubmit}\n" .
-               "• Nomor Registrasi: {$nomorRegistrasi}\n\n" .
-               "📌 *Status:* Sedang dalam proses review\n\n" .
-               "Sesuai dengan UU No. 14 Tahun 2008, kami akan merespons permohonan Anda " .
-               "dalam waktu maksimal 10 (sepuluh) hari kerja.\n\n" .
-               "Silakan pantau status melalui dashboard atau hubungi PPID untuk informasi lebih lanjut.\n\n" .
-               "Hormat kami,\n" .
-               "*PPID Kalimantan Utara*\n" .
-               "Pemerintah Provinsi Kalimantan Utara";
-    }
-
-    /**
-     * Build Information Objection message for user
-     */
-    private function buildInformationObjectionMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "⚖️ *PPID KALTARA - Konfirmasi Keberatan Informasi*\n\n" .
-               "Halo {$namaLengkap},\n\n" .
-               "Keberatan informasi publik Anda telah berhasil diterima:\n\n" .
-               "📋 *Detail Keberatan:*\n" .
-               "• Nama Pengaju: {$namaLengkap}\n" .
-               "• Tanggal Submit: {$tanggalSubmit}\n" .
-               "• Nomor Registrasi: {$nomorRegistrasi}\n\n" .
-               "📌 *Status:* Sedang dalam proses review\n\n" .
-               "Tim kami akan meninjau keberatan Anda dengan seksama. " .
-               "Proses penanganan keberatan akan dilakukan sesuai dengan ketentuan peraturan perundang-undangan.\n\n" .
-               "Kami akan menghubungi Anda untuk update status dalam 7 hari kerja.\n\n" .
-               "Hormat kami,\n" .
-               "*PPID Kalimantan Utara*\n" .
-               "Pemerintah Provinsi Kalimantan Utara";
-    }
-
-    /**
-     * Build ATHG Report message for user
-     */
-    private function buildATHGMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Pelapor';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🚨 *KALTARA - Konfirmasi Laporan ATHG*\n\n" .
-               "Halo {$namaLengkap},\n\n" .
-               "Laporan dugaan Aparatur Tidak Harmonis dan Gratifikasi (ATHG) Anda telah berhasil diterima:\n\n" .
-               "📋 *Detail Laporan:*\n" .
-               "• Nama Pelapor: {$namaLengkap}\n" .
-               "• Tanggal Submit: {$tanggalSubmit}\n" .
-               "• Nomor Registrasi: {$nomorRegistrasi}\n\n" .
-               "📌 *Status:* Sedang dalam proses review\n\n" .
-               "⚠️ *PENTING:*\n" .
-               "• Laporan Anda akan ditangani dengan kerahasiaan tinggi\n" .
-               "• Tim investigasi akan menindaklanjuti sesuai prosedur\n" .
-               "• Identitas pelapor akan dijaga kerahasiaannya\n\n" .
-               "Kami akan menghubungi Anda dalam 24 jam untuk proses lebih lanjut.\n\n" .
-               "Hormat kami,\n" .
-               "*Tim Investigasi ATHG*\n" .
-               "Pemerintah Provinsi Kalimantan Utara";
-    }
-
-    /**
-     * Build status update message for user
-     */
-    private function buildStatusUpdateMessage(string $serviceType, array $data): string
-    {
-        $status = $data['status'] ?? 'Unknown';
-        $keterangan = $data['keterangan'] ?? '';
-        $id = $data['id'] ?? 'N/A';
-        $tanggal = now()->format('d/m/Y H:i');
-
-        $serviceLabel = match($serviceType) {
-            'skt' => 'SKT',
-            'skl' => 'SKL', 
-            'ppid', 'information_request' => 'Permohonan Informasi',
-            'information_objection' => 'Keberatan Informasi',
-            'athg', 'athg_report' => 'Laporan ATHG',
-            default => 'Layanan'
-        };
-
-        $statusIcon = match($status) {
-            'approved', 'disetujui', 'selesai' => '✅',
-            'rejected', 'ditolak' => '❌',
-            'review', 'dalam_review' => '⏳',
-            default => '📌'
-        };
-
-        $message = "{$statusIcon} *UPDATE STATUS {$serviceLabel}*\n\n" .
-                   "Halo,\n\n" .
-                   "Ada update status untuk pengajuan Anda:\n\n" .
-                   "📋 *Detail:*\n" .
-                   "• ID: {$id}\n" .
-                   "• Status: " . ucwords(str_replace('_', ' ', $status)) . "\n" .
-                   "• Waktu Update: {$tanggal}\n";
-
-        if ($keterangan) {
-            $message .= "• Keterangan: {$keterangan}\n";
+        if (empty($this->token)) {
+            return [
+                'success' => false,
+                'error' => 'WhatsApp token not configured'
+            ];
         }
 
-        $message .= "\nSilakan cek dashboard untuk detail lengkap.\n\n" .
-                    "Terima kasih,\n" .
-                    "*Tim Layanan Kaltara*";
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $this->token,
+            ])->get('https://api.fonnte.com/validate');
 
-        return $message;
-    }
+            return [
+                'success' => $response->successful(),
+                'response' => $response->json(),
+                'status' => $response->status()
+            ];
 
-    // ===================== ADMIN MESSAGE BUILDERS =====================
-
-    /**
-     * Build SKT admin notification message
-     */
-    private function buildSKTAdminMessage(array $data): string
-    {
-        $namaOrmas = $data['nama_ormas'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🔔 *[ADMIN] Pengajuan SKT Baru*\n\n" .
-               "Ada pengajuan SKT baru yang perlu direview:\n\n" .
-               "📋 *Detail:*\n" .
-               "• ORMAS: {$namaOrmas}\n" .
-               "• ID: {$nomorRegistrasi}\n" .
-               "• Waktu: {$tanggalSubmit}\n" .
-               "• Jenis: " . ($data['jenis_permohonan'] ?? 'Pendaftaran') . "\n\n" .
-               "⏰ *Action Required:* Review dalam 1x24 jam\n\n" .
-               "Silakan akses dashboard admin untuk memproses.";
-    }
-
-    /**
-     * Build SKL admin notification message
-     */
-    private function buildSKLAdminMessage(array $data): string
-    {
-        $namaOrganisasi = $data['nama_organisasi'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🔔 *[ADMIN] Pengajuan SKL Baru*\n\n" .
-               "Ada pengajuan SKL baru yang perlu direview:\n\n" .
-               "📋 *Detail:*\n" .
-               "• Organisasi: {$namaOrganisasi}\n" .
-               "• ID: {$nomorRegistrasi}\n" .
-               "• Waktu: {$tanggalSubmit}\n\n" .
-               "⏰ *Action Required:* Review dalam 1x24 jam\n\n" .
-               "Silakan akses dashboard admin untuk memproses.";
-    }
-
-    /**
-     * Build Information Request admin notification message
-     */
-    private function buildInformationRequestAdminMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🔔 *[ADMIN PPID] Permohonan Informasi Baru*\n\n" .
-               "Ada permohonan informasi publik baru:\n\n" .
-               "📋 *Detail:*\n" .
-               "• Pemohon: {$namaLengkap}\n" .
-               "• ID: {$nomorRegistrasi}\n" .
-               "• Waktu: {$tanggalSubmit}\n\n" .
-               "⏰ *Deadline:* Maksimal 10 hari kerja\n\n" .
-               "Silakan akses dashboard PPID untuk memproses.";
-    }
-
-    /**
-     * Build Information Objection admin notification message
-     */
-    private function buildInformationObjectionAdminMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Tidak diketahui';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-
-        return "🔔 *[ADMIN PPID] Keberatan Informasi Baru*\n\n" .
-               "Ada keberatan informasi publik yang perlu ditangani:\n\n" .
-               "📋 *Detail:*\n" .
-               "• Pengaju: {$namaLengkap}\n" .
-               "• ID: {$nomorRegistrasi}\n" .
-               "• Waktu: {$tanggalSubmit}\n\n" .
-               "🚨 *PRIORITY:* Keberatan perlu penanganan khusus\n\n" .
-               "Silakan akses dashboard PPID segera.";
-    }
-
-    /**
-     * Build ATHG admin notification message
-     */
-    private function buildATHGAdminMessage(array $data): string
-    {
-        $namaLengkap = $data['nama_lengkap'] ?? 'Pelapor';
-        $tanggalSubmit = now()->format('d/m/Y H:i');
-        $nomorRegistrasi = $data['id'] ?? 'Pending';
-        $bidang = $data['bidang'] ?? 'Tidak ditentukan';
-        $urgensi = $data['tingkat_urgensi'] ?? 'normal';
-
-        return "🚨 *[ADMIN] Laporan ATHG Baru*\n\n" .
-               "Ada laporan ATHG yang memerlukan perhatian:\n\n" .
-               "📋 *Detail:*\n" .
-               "• Pelapor: {$namaLengkap}\n" .
-               "• ID: {$nomorRegistrasi}\n" .
-               "• Bidang: " . ucfirst($bidang) . "\n" .
-               "• Urgensi: " . ucfirst($urgensi) . "\n" .
-               "• Waktu: {$tanggalSubmit}\n\n" .
-               ($urgensi === 'tinggi' ? "🔥 *URGENT:* Perlu penanganan segera!\n\n" : "") .
-               "Silakan akses dashboard untuk investigasi lebih lanjut.";
-    }
-
-    /**
-     * Build status update admin notification message
-     */
-    private function buildStatusUpdateAdminMessage(string $serviceType, array $data): string
-    {
-        $status = $data['status'] ?? 'Unknown';
-        $keterangan = $data['keterangan'] ?? '';
-        $id = $data['id'] ?? 'N/A';
-        $tanggal = now()->format('d/m/Y H:i');
-
-        $serviceLabel = match($serviceType) {
-            'skt' => 'SKT',
-            'skl' => 'SKL',
-            'ppid', 'information_request' => 'Permohonan Informasi',
-            'information_objection' => 'Keberatan Informasi',
-            'athg', 'athg_report' => 'Laporan ATHG',
-            default => 'Layanan'
-        };
-
-        $message = "🔔 *[ADMIN] Update Status {$serviceLabel}*\n\n" .
-                   "Status telah diupdate:\n\n" .
-                   "📋 *Detail:*\n" .
-                   "• ID: {$id}\n" .
-                   "• Status Baru: " . ucwords(str_replace('_', ' ', $status)) . "\n" .
-                   "• Waktu: {$tanggal}\n";
-
-        if ($keterangan) {
-            $message .= "• Keterangan: {$keterangan}\n";
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
         }
+    }
 
-        $message .= "\nNotifikasi telah dikirim ke user.";
+    /**
+     * Get all WhatsApp settings for admin panel
+     */
+    public function getSettings(): array
+    {
+        try {
+            $settings = DB::table('settings')
+                ->where('group', 'whatsapp')
+                ->get()
+                ->mapWithKeys(function ($setting) {
+                    return [$setting->name => $setting->payload];
+                });
 
-        return $message;
+            return $settings->toArray();
+        } catch (Exception $e) {
+            Log::error('Failed to get WhatsApp settings', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Update WhatsApp setting
+     */
+    public function updateSetting(string $key, string $value): bool
+    {
+        try {
+            DB::table('settings')
+                ->updateOrInsert(
+                    [
+                        'group' => 'whatsapp',
+                        'name' => str_replace('whatsapp.', '', $key)
+                    ],
+                    [
+                        'payload' => $value,
+                        'locked' => 0,
+                        'updated_at' => now()
+                    ]
+                );
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to update WhatsApp setting', [
+                'key' => $key,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }

@@ -212,15 +212,19 @@ class OrmasMaster extends Model
     /**
      * Create or update ORMAS master dari SKL
      */
-    public static function createOrUpdateFromSKL($skl, string $status = 'belum_selesai')
+    public static function createOrUpdateFromSKL(SKL $skl, string $status = 'belum_selesai')
     {
-        // Implementasi sesuai dengan struktur SKL
-        // Sesuaikan dengan field yang ada di SKL
         $data = [
             'nama_ormas' => $skl->nama_organisasi ?? $skl->nama_ormas,
+            'nama_singkatan_ormas' => $skl->nama_singkatan_organisasi ?? $skl->nama_singkatan_ormas,
             'sumber_registrasi' => 'skl',
             'skl_id' => $skl->id,
             'email' => $skl->email_organisasi ?? $skl->email,
+            'alamat_sekretariat' => $skl->alamat_organisasi ?? $skl->alamat_sekretariat,
+            'provinsi' => $skl->provinsi,
+            'kab_kota' => $skl->kab_kota,
+            'kode_pos' => $skl->kode_pos,
+            'nomor_handphone' => $skl->nomor_handphone,
             'last_updated_from_source_at' => now(),
         ];
 
@@ -228,6 +232,8 @@ class OrmasMaster extends Model
         if ($status === 'selesai') {
             $data['status_administrasi'] = 'selesai';
             $data['tanggal_selesai_administrasi'] = now();
+        } else {
+            $data['status_administrasi'] = $status;
         }
 
         return static::updateOrCreate(

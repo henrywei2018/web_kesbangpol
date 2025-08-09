@@ -5,7 +5,6 @@ namespace App\Observers;
 use App\Models\SKL;
 use App\Models\OrmasMaster;
 
-
 class SKLObserver
 {
     /**
@@ -35,7 +34,7 @@ class SKLObserver
      */
     public function deleted(SKL $skl): void
     {
-        // Optionally handle when SKL is deleted
+        // Handle ORMAS record when SKL is deleted
         $ormas = OrmasMaster::where('skl_id', $skl->id)->first();
         if ($ormas) {
             $ormas->update([
