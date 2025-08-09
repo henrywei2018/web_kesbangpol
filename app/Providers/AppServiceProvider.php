@@ -15,7 +15,8 @@ use App\Models\SKT;
 use App\Models\SKL;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\KeberatanInformasiPublik;
-use App\Models\LaporATHG; // ✅ ADD this import
+use App\Models\LaporATHG;
+use App\Models\LaporGiat;
 
 // Import Observers
 use App\Observers\WhatsAppObserver;
@@ -65,11 +66,11 @@ class AppServiceProvider extends ServiceProvider
      */
     private function registerObservers(): void
     {
-        // ✅ Register business logic observers first (these are traditional observer classes)
-        SKT::observe(SKTObserver::class);  // SKT → ORMAS logic
-        SKL::observe(SKLObserver::class);  // SKL → ORMAS logic
         
-        // ✅ Register WhatsApp notifications using created event
+        SKT::observe(SKTObserver::class);
+        SKL::observe(SKLObserver::class);
+        
+        
         $this->registerWhatsAppNotifications();
     }
 
@@ -100,6 +101,9 @@ class AppServiceProvider extends ServiceProvider
 
         LaporATHG::created(function ($laporATHG) use ($whatsappObserver) {
             $whatsappObserver->laporATHGCreated($laporATHG);
+        });
+        LaporGiat::created(function ($laporGiat) use ($whatsappObserver) {
+            $whatsappObserver->laporGiatCreated($laporGiat);
         });
     }
 }

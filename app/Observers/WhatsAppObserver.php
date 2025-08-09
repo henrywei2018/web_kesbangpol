@@ -6,7 +6,8 @@ use App\Models\SKT;
 use App\Models\SKL;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\KeberatanInformasiPublik;
-use App\Models\LaporATHG; // ✅ ADD this import
+use App\Models\LaporATHG; 
+use App\Models\LaporGiat;
 use App\Services\FonteService;
 use Illuminate\Support\Facades\Log;
 
@@ -94,6 +95,18 @@ class WhatsAppObserver
         // Send notifications to user and admin
         $this->sendUserNotification($laporATHG, 'athg_report');
         $this->sendAdminNotification($laporATHG, 'athg_report');
+    }
+    public function laporGiatCreated(LaporGiat $laporGiat): void
+    {
+        Log::info('WhatsApp Observer: LaporGiat created event triggered', [
+            'lapor_giat_id' => $laporGiat->id,
+            'user_id' => $laporGiat->user_id,
+            'nama_ormas' => $laporGiat->nama_ormas
+        ]);
+
+        // Send notifications to user and admin - FOLLOWING EXISTING PATTERN
+        $this->sendUserNotification($laporGiat, 'lapor_giat');
+        $this->sendAdminNotification($laporGiat, 'lapor_giat');
     }
 
     /**
@@ -210,6 +223,14 @@ class WhatsAppObserver
                 'tingkat_urgensi' => $model->tingkat_urgensi ?? 'N/A',
                 'tanggal_pengajuan' => $model->created_at->format('d/m/Y H:i'),
             ]),
+            'lapor_giat' => $this->fonteService->sendLaporGiatNotification($phoneNumber, [
+                'id' => $model->id,
+                'nama_ormas' => $model->nama_ormas,
+                'ketua_nama_lengkap' => $model->ketua_nama_lengkap,
+                'tanggal_kegiatan' => $model->tanggal_kegiatan->format('d/m/Y'),
+                'nama_pemohon' => $user->firstname . ' ' . $user->lastname,
+                'tanggal_pengajuan' => $model->created_at->format('d/m/Y H:i'),
+            ]),
             
             default => [
                 'success' => false, 
@@ -307,6 +328,12 @@ class WhatsAppObserver
                 'lokasi' => $model->lokasi ?? 'N/A',
                 'kontak_pelapor' => $model->kontak_pelapor ?? 'N/A',
             ],
+            'lapor_giat' => [
+                'nama_ormas' => $model->nama_ormas,
+                'ketua_nama_lengkap' => $model->ketua_nama_lengkap,
+                'tanggal_kegiatan' => $model->tanggal_kegiatan->format('d/m/Y'),
+                'nomor_handphone' => $model->nomor_handphone,
+            ],
             
             default => []
         };
@@ -323,6 +350,7 @@ class WhatsAppObserver
             'information_request' => 'Permohonan Informasi Publik',
             'information_objection' => 'Keberatan Informasi Publik',
             'athg_report' => 'Laporan ATHG',
+            'lapor_giat' => 'Laporan Kegiatan',
             default => 'Layanan'
         };
     }

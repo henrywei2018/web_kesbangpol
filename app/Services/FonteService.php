@@ -257,6 +257,27 @@ class FonteService
         
         return $this->sendMessage($target, $message);
     }
+    public function sendLaporGiatNotification(string $target, array $data): array
+    {
+        $template = $this->getSetting('whatsapp.lapor_giat_template',
+            "📋 *Notifikasi Laporan Kegiatan*\n\nHalo {nama_pemohon}!\n\nLaporan kegiatan Anda telah diterima dan sedang ditinjau.\n\n🏢 *Detail Laporan:*\n• ID: {id}\n• Nama Ormas: {nama_ormas}\n• Ketua: {ketua_nama_lengkap}\n• Tanggal Kegiatan: {tanggal_kegiatan}\n• Tanggal Pengajuan: {tanggal_pengajuan}\n\n📝 Laporan Anda akan segera ditinjau oleh tim admin.\n\n✅ Anda akan mendapat notifikasi setelah proses review selesai.\n\nTerima kasih atas partisipasi Anda! 🙏"
+        );
+
+        $message = str_replace(
+            ['{id}', '{nama_ormas}', '{ketua_nama_lengkap}', '{tanggal_kegiatan}', '{nama_pemohon}', '{tanggal_pengajuan}'],
+            [
+                $data['id'],
+                $data['nama_ormas'] ?? 'N/A',
+                $data['ketua_nama_lengkap'] ?? 'N/A',
+                $data['tanggal_kegiatan'] ?? 'N/A',
+                $data['nama_pemohon'] ?? 'N/A',
+                $data['tanggal_pengajuan'] ?? now()->format('d/m/Y H:i')
+            ],
+            $template
+        );
+        
+        return $this->sendMessage($target, $message);
+    }
     public function sendStatusUpdate(string $target, string $serviceType, array $data): array
     {
         $template = $this->getSetting('whatsapp.status_update_template',

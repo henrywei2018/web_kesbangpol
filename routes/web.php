@@ -12,6 +12,7 @@ use App\Livewire\Auth\Register;
 use App\Livewire\Auth\ForgotPassword;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\FileDownloadController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -84,3 +85,21 @@ Route::get('/admin/spts/{sptId}/cetakspt', [App\Filament\Resources\SPTResource::
     ->middleware('auth');
 Route::get('/admin/spts/{sptId}/cetaksppd', [App\Filament\Resources\SPTResource::class, 'showSppdPdf'])->name('sppd.show-pdf')
     ->middleware('auth');
+
+Route::middleware(['auth'])->group(function () {
+    // Laporan Kegiatan file routes
+    Route::get('/lapor-giat/{laporGiat}/download-laporan', [FileDownloadController::class, 'downloadLaporan'])
+        ->name('lapor-giat.download-laporan');
+    
+    Route::get('/lapor-giat/{laporGiat}/view-laporan', [FileDownloadController::class, 'viewLaporan'])
+        ->name('lapor-giat.view-laporan');
+    
+    Route::get('/lapor-giat/{laporGiat}/download-image/{imageIndex}', [FileDownloadController::class, 'downloadImage'])
+        ->name('lapor-giat.download-image');
+    
+    Route::get('/lapor-giat/{laporGiat}/view-image/{imageIndex}', [FileDownloadController::class, 'viewImage'])
+        ->name('lapor-giat.view-image');
+    
+    Route::get('/lapor-giat/{laporGiat}/download-all-images', [FileDownloadController::class, 'downloadAllImages'])
+        ->name('lapor-giat.download-all-images');
+});

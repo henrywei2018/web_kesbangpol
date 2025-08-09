@@ -107,7 +107,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
             ?? null;
     }
 
-    // Define an accessor for the 'name' attribute
     public function getNameAttribute()
     {
         return "{$this->firstname} {$this->lastname}";
@@ -129,29 +128,20 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         return $this->hasMany(SKL::class, 'id_pemohon');
     }
 
-    /**
-     * Relationship with SKT model  
-     * User can have many SKT submissions
-     */
     public function skts()
     {
         return $this->hasMany(SKT::class, 'id_pemohon');
     }
+    public function laporGiats()
+    {
+        return $this->hasMany(LaporGiat::class);
+    }
 
-
-    /**
-     * Relationship with PermohonanInformasiPublik model
-     * User can have many public information requests
-     */
     public function permohonanInformasiPubliks()
     {
         return $this->hasMany(PermohonanInformasiPublik::class, 'id_pemohon');
     }
 
-    /**
-     * Relationship with KeberatanInformasiPublik model
-     * User can have many public information objections
-     */
     public function keberatanInformasiPubliks()
     {
         return $this->hasMany(KeberatanInformasiPublik::class, 'id_pemohon');
