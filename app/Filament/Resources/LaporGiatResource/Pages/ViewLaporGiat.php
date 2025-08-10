@@ -15,12 +15,26 @@ class ViewLaporGiat extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+            
             Actions\Action::make('download_pdf')
                 ->label('Download PDF')
                 ->icon('heroicon-m-document-arrow-down')
-                ->url(fn () => $this->getRecord()->laporan_kegiatan_url)
+                ->url(fn () => $this->getRecord()->laporan_kegiatan_download_url) // Fix: Use download_url
                 ->openUrlInNewTab()
-                ->visible(fn () => !empty($this->getRecord()->laporan_kegiatan_path)),
+                ->visible(fn () => $this->getRecord()->hasLaporanFile()),
+            
+            Actions\Action::make('view_pdf')
+                ->label('Lihat PDF')
+                ->icon('heroicon-m-eye')
+                ->url(fn () => $this->getRecord()->laporan_kegiatan_url) // For viewing inline
+                ->openUrlInNewTab()
+                ->visible(fn () => $this->getRecord()->hasLaporanFile()),
+            
+            Actions\Action::make('download_images_zip')
+                ->label('Download Foto (ZIP)')
+                ->icon('heroicon-m-archive-box-arrow-down')
+                ->url(fn () => $this->getRecord()->all_images_zip_url)
+                ->visible(fn () => $this->getRecord()->hasImages()),
         ];
     }
 

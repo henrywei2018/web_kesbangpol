@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 class LaporGiatResource extends Resource
 {
     protected static ?string $model = LaporGiat::class;
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
@@ -26,7 +27,6 @@ class LaporGiatResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Laporan Kegiatan';
 
-    protected static ?string $navigationGroup = 'Manajemen Laporan';
 
     protected static ?int $navigationSort = 3;
 
@@ -124,7 +124,7 @@ class LaporGiatResource extends Resource
                         'success' => 'approved',
                         'danger' => 'rejected',
                     ])
-                    ->formatStateUsing(fn ($state) => LaporGiat::STATUS_OPTIONS[$state] ?? $state),
+                    ->formatStateUsing(fn($state) => LaporGiat::STATUS_OPTIONS[$state] ?? $state),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal Pengajuan')
@@ -133,14 +133,14 @@ class LaporGiatResource extends Resource
 
                 Tables\Columns\IconColumn::make('has_files')
                     ->label('File')
-                    ->getStateUsing(fn ($record) => !empty($record->laporan_kegiatan_path))
+                    ->getStateUsing(fn($record) => !empty($record->laporan_kegiatan_path))
                     ->boolean()
                     ->trueIcon('heroicon-o-document-text')
                     ->falseIcon('heroicon-o-x-mark'),
 
                 Tables\Columns\IconColumn::make('has_images')
                     ->label('Foto')
-                    ->getStateUsing(fn ($record) => !empty($record->images_paths))
+                    ->getStateUsing(fn($record) => !empty($record->images_paths))
                     ->boolean()
                     ->trueIcon('heroicon-o-photo')
                     ->falseIcon('heroicon-o-x-mark'),
@@ -161,11 +161,11 @@ class LaporGiatResource extends Resource
                         return $query
                             ->when(
                                 $data['dari_tanggal'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kegiatan', '>=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('tanggal_kegiatan', '>=', $date),
                             )
                             ->when(
                                 $data['sampai_tanggal'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kegiatan', '<=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('tanggal_kegiatan', '<=', $date),
                             );
                     }),
 
@@ -180,42 +180,42 @@ class LaporGiatResource extends Resource
                         return $query
                             ->when(
                                 $data['dari_pengajuan'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['sampai_pengajuan'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                
-                Tables\Actions\Action::make('view_pdf')
-                    ->label('Lihat PDF')
-                    ->icon('heroicon-m-eye')
-                    ->url(fn (LaporGiat $record) => $record->laporan_kegiatan_url)
-                    ->openUrlInNewTab()
-                    ->visible(fn (LaporGiat $record) => $record->hasLaporanFile()),
-                
-                Tables\Actions\Action::make('download_pdf')
-                    ->label('Download PDF')
-                    ->icon('heroicon-m-document-arrow-down')
-                    ->url(fn (LaporGiat $record) => $record->laporan_kegiatan_download_url)
-                    ->visible(fn (LaporGiat $record) => $record->hasLaporanFile()),
-                
-                Tables\Actions\Action::make('download_images')
-                    ->label('Download Foto (ZIP)')
-                    ->icon('heroicon-m-archive-box-arrow-down')
-                    ->url(fn (LaporGiat $record) => $record->all_images_zip_url)
-                    ->visible(fn (LaporGiat $record) => $record->hasImages()),
-            ])
-            ->label('File Actions')
-            ->icon('heroicon-m-ellipsis-vertical')
-            ->size('sm')
-            ->color('gray'),
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+
+                    Tables\Actions\Action::make('view_pdf')
+                        ->label('Lihat PDF')
+                        ->icon('heroicon-m-eye')
+                        ->url(fn(LaporGiat $record) => $record->laporan_kegiatan_url)
+                        ->openUrlInNewTab()
+                        ->visible(fn(LaporGiat $record) => $record->hasLaporanFile()),
+
+                    Tables\Actions\Action::make('download_pdf')
+                        ->label('Download PDF')
+                        ->icon('heroicon-m-document-arrow-down')
+                        ->url(fn(LaporGiat $record) => $record->laporan_kegiatan_download_url)
+                        ->visible(fn(LaporGiat $record) => $record->hasLaporanFile()),
+
+                    Tables\Actions\Action::make('download_images')
+                        ->label('Download Foto (ZIP)')
+                        ->icon('heroicon-m-archive-box-arrow-down')
+                        ->url(fn(LaporGiat $record) => $record->all_images_zip_url)
+                        ->visible(fn(LaporGiat $record) => $record->hasImages()),
+                ])
+                    ->label('Actions')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size('sm')
+                    ->color('gray'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -261,57 +261,110 @@ class LaporGiatResource extends Resource
     }
 
     public static function infolist(Infolist $infolist): Infolist
-{
-    return $infolist
-        ->schema([
-            // ... other sections remain the same ...
-
-            Infolists\Components\Section::make('File & Foto')
-                ->schema([
-                    Infolists\Components\Actions::make([
-                        Infolists\Components\Actions\Action::make('view_pdf')
-                            ->label('Lihat PDF')
-                            ->icon('heroicon-m-eye')
-                            ->url(fn ($record) => $record->laporan_kegiatan_url)
-                            ->openUrlInNewTab()
-                            ->visible(fn ($record) => $record->hasLaporanFile()),
-
-                        Infolists\Components\Actions\Action::make('download_pdf')
-                            ->label('Download PDF')
-                            ->icon('heroicon-m-document-arrow-down')
-                            ->url(fn ($record) => $record->laporan_kegiatan_download_url)
-                            ->color('success')
-                            ->visible(fn ($record) => $record->hasLaporanFile()),
-
-                        Infolists\Components\Actions\Action::make('download_all_images')
-                            ->label('Download Semua Foto (ZIP)')
-                            ->icon('heroicon-m-archive-box-arrow-down')
-                            ->url(fn ($record) => $record->all_images_zip_url)
-                            ->color('info')
-                            ->visible(fn ($record) => $record->hasImages()),
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Informasi Pemohon')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('user.name')
+                            ->label('Nama Pemohon'),
+                        Infolists\Components\TextEntry::make('user.email')
+                            ->label('Email'),
+                        Infolists\Components\TextEntry::make('user.no_telepon')
+                            ->label('No. Telepon'),
                     ])
-                    ->columnSpanFull(),
+                    ->columns(3),
 
-                    Infolists\Components\TextEntry::make('image_count')
-                        ->label('Jumlah Foto')
-                        ->formatStateUsing(fn ($record) => $record->image_count . ' foto')
-                        ->visible(fn ($record) => $record->hasImages()),
+                Infolists\Components\Section::make('Informasi Organisasi')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('nama_ormas')
+                            ->label('Nama Organisasi'),
+                        Infolists\Components\TextEntry::make('ketua_nama_lengkap')
+                            ->label('Nama Lengkap Ketua'),
+                        Infolists\Components\TextEntry::make('nomor_handphone')
+                            ->label('Nomor Handphone'),
+                    ])
+                    ->columns(2),
 
-                    // Custom image gallery with secure URLs
-                    Infolists\Components\ViewEntry::make('images_gallery')
-                        ->label('Galeri Foto')
-                        ->view('filament.infolists.image-gallery')
-                        ->viewData(fn ($record) => [
-                            'imageUrls' => $record->image_urls,
-                            'downloadUrls' => $record->image_download_urls,
+                Infolists\Components\Section::make('Detail Kegiatan')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('tanggal_kegiatan')
+                            ->label('Tanggal Kegiatan')
+                            ->date('d F Y'),
+
+                        Infolists\Components\TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->color(fn(string $state): string => match ($state) {
+                                'pending' => 'warning',
+                                'approved' => 'success',
+                                'rejected' => 'danger',
+                                default => 'secondary',
+                            })
+                            ->formatStateUsing(fn($state) => LaporGiat::STATUS_OPTIONS[$state] ?? $state),
+
+                        Infolists\Components\TextEntry::make('keterangan')
+                            ->label('Keterangan Admin')
+                            ->visible(fn($record) => !empty($record->keterangan))
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Infolists\Components\Section::make('File & Foto')
+                    ->schema([
+                        Infolists\Components\Actions::make([
+                            Infolists\Components\Actions\Action::make('view_pdf')
+                                ->label('Lihat PDF')
+                                ->icon('heroicon-m-eye')
+                                ->url(fn($record) => $record->laporan_kegiatan_url)
+                                ->openUrlInNewTab()
+                                ->visible(fn($record) => $record->hasLaporanFile()),
+
+                            Infolists\Components\Actions\Action::make('download_pdf')
+                                ->label('Download PDF')
+                                ->icon('heroicon-m-document-arrow-down')
+                                ->url(fn($record) => $record->laporan_kegiatan_download_url)
+                                ->color('success')
+                                ->visible(fn($record) => $record->hasLaporanFile()),
+
+                            Infolists\Components\Actions\Action::make('download_all_images')
+                                ->label('Download Semua Foto (ZIP)')
+                                ->icon('heroicon-m-archive-box-arrow-down')
+                                ->url(fn($record) => $record->all_images_zip_url)
+                                ->color('info')
+                                ->visible(fn($record) => $record->hasImages()),
                         ])
-                        ->visible(fn ($record) => $record->hasImages())
-                        ->columnSpanFull(),
-                ]),
+                            ->columnSpanFull(),
 
-            // ... rest of sections remain the same ...
-        ]);
-}
+                        Infolists\Components\TextEntry::make('image_count')
+                            ->label('Jumlah Foto')
+                            ->formatStateUsing(fn($record) => $record->image_count . ' foto')
+                            ->visible(fn($record) => $record->hasImages()),
+
+                        // Custom image gallery with secure URLs
+                        Infolists\Components\ViewEntry::make('images_gallery')
+                            ->label('Galeri Foto')
+                            ->view('filament.infolists.image-gallery')
+                            ->viewData(fn($record) => [
+                                'imageUrls' => $record->image_urls,
+                                'downloadUrls' => $record->image_download_urls,
+                            ])
+                            ->visible(fn($record) => $record->hasImages())
+                            ->columnSpanFull(),
+                    ]),
+
+                Infolists\Components\Section::make('Informasi Pengajuan')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Tanggal Pengajuan')
+                            ->dateTime('d F Y, H:i'),
+                        Infolists\Components\TextEntry::make('updated_at')
+                            ->label('Terakhir Diperbarui')
+                            ->dateTime('d F Y, H:i'),
+                    ])
+                    ->columns(2),
+            ]);
+    }
 
     public static function getRelations(): array
     {

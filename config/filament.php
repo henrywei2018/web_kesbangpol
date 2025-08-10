@@ -86,4 +86,19 @@ return [
 
     'livewire_loading_delay' => 'default',
 
+    'pages' => [
+        'register' => \Filament\Pages\Auth\Register::class,
+        'login' => \Filament\Pages\Auth\Login::class,
+    ],
+
+    'widgets' => [
+        'account' => \Filament\Widgets\AccountWidget::class,
+        'filament-info' => \Filament\Widgets\FilamentInfoWidget::class,
+    ],
+
+    // Custom dashboard configuration
+    'dashboard' => [
+        'should_check_policy_existence' => true,
+    ],
+
 ];

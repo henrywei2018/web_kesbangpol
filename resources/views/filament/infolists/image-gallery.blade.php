@@ -1,3 +1,5 @@
+{{-- File: resources/views/filament/infolists/image-gallery.blade.php --}}
+
 <div class="space-y-4">
     @if (!empty($imageUrls))
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -52,5 +54,12 @@ function openImageModal(imageUrl, downloadUrl) {
         </div>
     `;
     document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 </script>

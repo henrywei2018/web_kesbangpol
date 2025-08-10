@@ -21,6 +21,10 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
+use App\Filament\Pages\AdminDashboard;
+use App\Filament\Widgets\AdminOverviewWidget;
+use App\Filament\Widgets\AdminStatusWidget;
+use App\Filament\Widgets\AdminRecentActivityWidget;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -48,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             
             ->pages([
+                AdminDashboard::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make()
@@ -89,6 +94,9 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
+                AdminOverviewWidget::class,
+                AdminStatusWidget::class,
+                AdminRecentActivityWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

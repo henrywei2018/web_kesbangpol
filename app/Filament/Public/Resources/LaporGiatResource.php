@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 class LaporGiatResource extends Resource
 {
     protected static ?string $model = LaporGiat::class;
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 

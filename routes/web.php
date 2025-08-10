@@ -13,6 +13,7 @@ use App\Livewire\Auth\ForgotPassword;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\FileDownloadController;
+use App\Http\Controllers\AdminDashboardController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -102,4 +103,12 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get('/lapor-giat/{laporGiat}/download-all-images', [FileDownloadController::class, 'downloadAllImages'])
         ->name('lapor-giat.download-all-images');
+});
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Redirect /admin to the custom dashboard
+    Route::redirect('/admin', '/admin/admin-dashboard');
+    
+    // Custom dashboard route
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+        ->name('admin.dashboard');
 });
