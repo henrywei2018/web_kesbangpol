@@ -10,6 +10,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Notifications\Notification;
+use App\Services\FonteService;
 
 class LaporATHGResource extends Resource
 {
@@ -205,6 +207,50 @@ class LaporATHGResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('send_to_group')
+                ->label('Kirim ke Group')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('info')
+                ->requiresConfirmation()
+                ->modalHeading('Kirim Notifikasi ke Group Admin')
+                ->modalDescription('Apakah Anda yakin ingin mengirim notifikasi ini ke group admin WhatsApp?')
+                ->action(function (LaporATHG $record) {
+                    $fonteService = app(FonteService::class);
+                    
+                    // Ambil group ID dari setting
+                    $groupId = $fonteService->getSetting('whatsapp.group_athg', '');
+                    
+                    // Buat pesan khusus untuk group
+                    $message = "🔔 *LAPORAN ATHG - POKUS KALTARA*\n\n" .
+                                "Ada data laporan ATHG terverifikasi yang perlu perhatian:\n\n" .
+                                "📋 *Detail:*\n" .
+                                "• ID ATHG: {$record->lapathg_id}\n" .
+                                "• Bidang: {$record->bidang}\n" .                                
+                                "• Perihal: {$record->perihal}\n\n" .
+                                
+                                "• Isi Informasi: {$record->detail_kejadian}\n" .
+                                "• Catatan: {$record->catatan_admin}\n" .
+                                "• Tanggal Veriikasi: " . $record->updated_at->format('d/m/Y H:i') . "\n\n" .
+                                "🚨 *PERHATIAN: Laporan ini bersifat rahasia dan harus ditangani sesuai prosedur*\n\n" .
+                                "Silakan cek panel admin untuk detail lengkap.";
+                    
+                    // Kirim ke group
+                    $result = $fonteService->sendGroupMessage($groupId, $message);
+                    
+                    if ($result['success']) {
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Notifikasi berhasil dikirim ke group admin')
+                            ->success()
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->title('Gagal')
+                            ->body('Gagal mengirim notifikasi: ' . ($result['error'] ?? 'Unknown error'))
+                            ->danger()
+                            ->send();
+                    }
+                }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

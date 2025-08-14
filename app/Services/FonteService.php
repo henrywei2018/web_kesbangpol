@@ -32,7 +32,7 @@ class FonteService
     /**
      * Get setting value from database
      */
-    private function getSetting(string $key, string $default = ''): string
+    public function getSetting(string $key, string $default = ''): string
     {
         try {
             $setting = DB::table('settings')
@@ -40,7 +40,27 @@ class FonteService
                 ->where('name', str_replace('whatsapp.', '', $key))
                 ->first();
             
-            return $setting ? $setting->payload : $default;
+            if (!$setting) {
+                return $default;
+            }
+
+            $payload = $setting->payload;
+            
+            // Check if payload is JSON and decode it
+            if (is_string($payload) && (str_starts_with($payload, '{') || str_starts_with($payload, '['))) {
+                $decoded = json_decode($payload, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return is_string($decoded) ? $decoded : $payload;
+                }
+            }
+            
+            // Clean quotes only if it's not a group ID
+            if (!str_contains($payload, '@g.us')) {
+                $payload = trim($payload, '"\'');
+            }
+            
+            return $payload;
+            
         } catch (Exception $e) {
             Log::warning('Failed to get setting', ['key' => $key, 'error' => $e->getMessage()]);
             return $default;
@@ -60,83 +80,88 @@ class FonteService
      * Send WhatsApp message via Fonnte
      */
     public function sendMessage(string $target, string $message, array $options = []): array
-    {
-        // Check if WhatsApp is enabled
-        if (!$this->isEnabled()) {
-            Log::info('WhatsApp notifications disabled');
-            return [
-                'success' => false,
-                'error' => 'WhatsApp notifications are disabled'
-            ];
-        }
-
-        // Check if token is configured
-        if (empty($this->token)) {
-            Log::error('WhatsApp token not configured');
-            return [
-                'success' => false,
-                'error' => 'WhatsApp token not configured'
-            ];
-        }
-
-        try {
-            // Validate phone number format
-            $target = $this->formatPhoneNumber($target);
-            
-            if (!$target) {
-                throw new Exception('Invalid phone number format');
-            }
-
-            $payload = [
-                'target' => $target,
-                'message' => $message,
-                'countryCode' => '62', // Indonesia
-            ];
-
-            // Add optional parameters
-            if (isset($options['delay'])) {
-                $payload['delay'] = $options['delay'];
-            }
-
-            if (isset($options['schedule'])) {
-                $payload['schedule'] = $options['schedule'];
-            }
-
-            $response = Http::withHeaders([
-                'Authorization' => $this->token,
-            ])->post($this->apiUrl, $payload);
-
-            $result = $response->json();
-
-            // Log the response for debugging
-            Log::info('Fonnte WhatsApp Response', [
-                'target' => $target,
-                'status' => $response->status(),
-                'response' => $result
-            ]);
-
-            return [
-                'success' => $response->successful() && ($result['status'] ?? false),
-                'response' => $result,
-                'message_id' => $result['id'] ?? null,
-                'status' => $result['status'] ?? false,
-                'reason' => $result['reason'] ?? null
-            ];
-
-        } catch (Exception $e) {
-            Log::error('Fonnte WhatsApp Error', [
-                'target' => $target ?? 'unknown',
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'response' => null
-            ];
-        }
+{
+    // Check if WhatsApp is enabled
+    if (!$this->isEnabled()) {
+        Log::info('WhatsApp notifications disabled');
+        return [
+            'success' => false,
+            'error' => 'WhatsApp notifications are disabled'
+        ];
     }
+
+    // Check if token is configured
+    if (empty($this->token)) {
+        Log::error('WhatsApp token not configured');
+        return [
+            'success' => false,
+            'error' => 'WhatsApp token not configured'
+        ];
+    }
+
+    // Check if target is a group ID - jika ya, gunakan sendGroupMessage
+    if ($this->isValidGroupId($target)) {
+        return $this->sendGroupMessage($target, $message, $options);
+    }
+
+    try {
+        // Validate phone number format untuk nomor biasa
+        $target = $this->formatPhoneNumber($target);
+        
+        if (!$target) {
+            throw new Exception('Invalid phone number format');
+        }
+
+        $payload = [
+            'target' => $target,
+            'message' => $message,
+            'countryCode' => '62', // Indonesia
+        ];
+
+        // Add optional parameters
+        if (isset($options['delay'])) {
+            $payload['delay'] = $options['delay'];
+        }
+
+        if (isset($options['schedule'])) {
+            $payload['schedule'] = $options['schedule'];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => $this->token,
+        ])->post($this->apiUrl, $payload);
+
+        $result = $response->json();
+
+        // Log the response for debugging
+        Log::info('Fonnte WhatsApp Response', [
+            'target' => $target,
+            'status' => $response->status(),
+            'response' => $result
+        ]);
+
+        return [
+            'success' => $response->successful() && ($result['status'] ?? false),
+            'response' => $result,
+            'message_id' => $result['id'] ?? null,
+            'status' => $result['status'] ?? false,
+            'reason' => $result['reason'] ?? null
+        ];
+
+    } catch (Exception $e) {
+        Log::error('Fonnte WhatsApp Error', [
+            'target' => $target ?? 'unknown',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return [
+            'success' => false,
+            'error' => $e->getMessage(),
+            'response' => null
+        ];
+    }
+}
 
     /**
      * Send SKT creation notification
@@ -488,4 +513,92 @@ class FonteService
             return false;
         }
     }
+    
+    /**
+ * Send WhatsApp message to group
+ */
+public function sendGroupMessage(string $groupId, string $message, array $options = []): array
+{
+    // Check if WhatsApp is enabled
+    if (!$this->isEnabled()) {
+        Log::info('WhatsApp notifications disabled');
+        return [
+            'success' => false,
+            'error' => 'WhatsApp notifications are disabled'
+        ];
+    }
+
+    // Check if token is configured
+    if (empty($this->token)) {
+        Log::error('WhatsApp token not configured');
+        return [
+            'success' => false,
+            'error' => 'WhatsApp token not configured'
+        ];
+    }
+
+    try {
+        // Validasi format grup ID - jangan diproses seperti nomor telepon
+        if (!$this->isValidGroupId($groupId)) {
+            throw new Exception('Invalid group ID format');
+        }
+
+        $payload = [
+            'target' => $groupId, // Langsung gunakan group ID tanpa formatting
+            'message' => $message,
+        ];
+
+        // Add optional parameters
+        if (isset($options['delay'])) {
+            $payload['delay'] = $options['delay'];
+        }
+
+        if (isset($options['schedule'])) {
+            $payload['schedule'] = $options['schedule'];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => $this->token,
+        ])->post($this->apiUrl, $payload);
+
+        $result = $response->json();
+
+        // Log the response for debugging
+        Log::info('Fonnte WhatsApp Group Response', [
+            'target' => $groupId,
+            'status' => $response->status(),
+            'response' => $result
+        ]);
+
+        return [
+            'success' => $response->successful() && ($result['status'] ?? false),
+            'response' => $result,
+            'message_id' => $result['id'] ?? null,
+            'status' => $result['status'] ?? false,
+            'reason' => $result['reason'] ?? null
+        ];
+
+    } catch (Exception $e) {
+        Log::error('Fonnte WhatsApp Group Error', [
+            'target' => $groupId,
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return [
+            'success' => false,
+            'error' => $e->getMessage(),
+            'response' => null
+        ];
+    }
+}
+
+/**
+ * Validate if target is a group ID
+ */
+private function isValidGroupId(string $target): bool
+{
+    return str_contains($target, '@g.us') && strlen($target) > 15;
+}
+
 }
