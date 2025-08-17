@@ -74,10 +74,97 @@ class ManageWhatsApp extends SettingsPage
                                     ->revealable()
                                     ->required(),
                             ]),
+                        Forms\Components\Section::make('Group WhatsApp Settings')
+                            ->description('Configure WhatsApp group IDs for each service')
+                            ->icon('heroicon-o-user-group')
+                            ->schema([
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\TextInput::make('group_skt')
+                                        ->label('Group SKT')
+                                        ->placeholder('120363404516069894@g.us')
+                                        ->helperText('WhatsApp group ID for SKT notifications'),
+
+                                    Forms\Components\TextInput::make('group_skl')
+                                        ->label('Group SKL')
+                                        ->placeholder('120363404516069894@g.us')
+                                        ->helperText('WhatsApp group ID for SKL notifications'),
+                                ]),
+
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\TextInput::make('group_ppid')
+                                        ->label('Group PPID')
+                                        ->placeholder('120363404516069894@g.us')
+                                        ->helperText('WhatsApp group ID for PPID notifications'),
+
+                                    Forms\Components\TextInput::make('group_athg')
+                                        ->label('Group ATHG')
+                                        ->placeholder('120363404516069894@g.us')
+                                        ->helperText('WhatsApp group ID for ATHG notifications - CONFIDENTIAL'),
+                                ]),
+                            ])
+                            ->collapsible(),
+
+                        Forms\Components\Section::make('Message Templates')
+                            ->description('Customize WhatsApp message templates for users and admins')
+                            ->icon('heroicon-o-chat-bubble-left')
+                            ->schema([
+                                Forms\Components\Tabs::make('templates')
+                                    ->tabs([
+                                        Forms\Components\Tabs\Tab::make('User Templates')
+                                            ->label('Templates for Public Users')
+                                            ->schema([
+                                                Forms\Components\Textarea::make('user_template_skt')
+                                                    ->label('SKT User Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {nama_pemohon}, {id}, {nama_ormas}, {jenis_permohonan}, {tanggal_pengajuan}'),
+
+                                                Forms\Components\Textarea::make('user_template_skl')
+                                                    ->label('SKL User Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {nama_pemohon}, {id}, {nama_organisasi}, {email_organisasi}, {tanggal_pengajuan}'),
+
+                                                Forms\Components\Textarea::make('user_template_ppid')
+                                                    ->label('PPID User Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {nama_lengkap}, {id}, {rincian_informasi}, {tanggal_pengajuan}'),
+
+                                                Forms\Components\Textarea::make('user_template_athg')
+                                                    ->label('ATHG User Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {nama_pelapor}, {lapathg_id}, {bidang}, {jenis_athg}, {tingkat_urgensi}, {tanggal_pengajuan}'),
+                                            ]),
+
+                                        Forms\Components\Tabs\Tab::make('Admin Templates')
+                                            ->label('Templates for Admin/Group')
+                                            ->schema([
+                                                Forms\Components\Textarea::make('admin_template_skt')
+                                                    ->label('SKT Admin/Group Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {id}, {nama_ormas}, {jenis_permohonan}, {nama_pemohon}, {status}, {tanggal}'),
+
+                                                Forms\Components\Textarea::make('admin_template_skl')
+                                                    ->label('SKL Admin/Group Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {id}, {nama_organisasi}, {email_organisasi}, {nama_pemohon}, {status}, {tanggal}'),
+
+                                                Forms\Components\Textarea::make('admin_template_ppid')
+                                                    ->label('PPID Admin/Group Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {id}, {nama_lengkap}, {rincian_informasi}, {status}, {tanggal}'),
+
+                                                Forms\Components\Textarea::make('admin_template_athg')
+                                                    ->label('ATHG Admin/Group Template')
+                                                    ->rows(8)
+                                                    ->helperText('Variables: {id}, {lapathg_id}, {bidang}, {jenis_athg}, {tingkat_urgensi}, {status}, {tanggal}'),
+                                            ]),
+                                    ]),
+                            ])
+                            ->collapsible(),
                     ])
                     ->columnSpan([
                         "md" => 2
                     ]),
+                
 
                 Forms\Components\Group::make()
                     ->schema([
@@ -134,7 +221,7 @@ class ManageWhatsApp extends SettingsPage
                                         ->icon('heroicon-o-paper-airplane')
                                         ->requiresConfirmation()
                                         ->modalDescription('This will send a test user notification message'),
-                                        
+
                                     Forms\Components\Actions\Action::make('test_admin')
                                         ->label('Test Admin Message')
                                         ->action('sendTestAdminMessage')
@@ -230,6 +317,7 @@ class ManageWhatsApp extends SettingsPage
                                 ])->fullWidth(),
                             ])
                             ->collapsible(),
+                        
                     ])
                     ->columnSpan([
                         "md" => 1
@@ -271,7 +359,7 @@ class ManageWhatsApp extends SettingsPage
     public function sendTestUserMessage()
     {
         $data = $this->form->getState();
-        
+
         if (empty($data['test_phone'])) {
             $this->sendErrorNotification('Please enter a test phone number');
             return;
@@ -280,10 +368,10 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
             $result = $fonteService->sendMessage(
-                $data['test_phone'], 
+                $data['test_phone'],
                 "🧪 *Test Message - User Notification*\n\nHi! This is a test message from your WhatsApp notification system.\n\n✅ Your user notifications are working correctly!\n\nTime: " . now()->format('d/m/Y H:i:s')
             );
 
@@ -300,7 +388,7 @@ class ManageWhatsApp extends SettingsPage
     public function sendTestAdminMessage()
     {
         $data = $this->form->getState();
-        
+
         if (empty($data['test_phone'])) {
             $this->sendErrorNotification('Please enter a test phone number');
             return;
@@ -309,10 +397,10 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
             $result = $fonteService->sendMessage(
-                $data['test_phone'], 
+                $data['test_phone'],
                 "🔔 *[ADMIN] Test Notification*\n\nThis is a test admin notification message.\n\n📋 *Test Details:*\n• Type: Admin Alert\n• Time: " . now()->format('d/m/Y H:i:s') . "\n• Status: Testing\n\n⏰ *Action Required:* No action needed - this is just a test\n\n✅ Your admin notifications are working correctly!"
             );
 
@@ -332,7 +420,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -341,22 +429,22 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
-            
+
             // Test data for SKT
             $testData = [
                 'id' => 'TEST-001',
                 'nama_ormas' => 'ORMAS Test Kaltara',
                 'jenis_permohonan' => 'pendaftaran',
             ];
-            
+
             $result = $fonteService->sendSKTNotification($phone, $testData);
 
             if ($result['overall_success']) {
                 $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
                 $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
-                
+
                 $this->sendSuccessNotification("SKT Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
             } else {
                 $this->sendErrorNotification('❌ SKT Service test failed. Check your settings and try again.');
@@ -370,7 +458,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -379,21 +467,21 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
-            
+
             $testData = [
                 'id' => 'TEST-SKL-001',
                 'nama_organisasi' => 'Organisasi Test Kaltara',
                 'email_organisasi' => 'test@kaltara.id',
             ];
-            
+
             $result = $fonteService->sendSKLNotification($phone, $testData);
 
             if ($result['overall_success']) {
                 $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
                 $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
-                
+
                 $this->sendSuccessNotification("SKL Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
             } else {
                 $this->sendErrorNotification('❌ SKL Service test failed. Check your settings and try again.');
@@ -407,7 +495,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -416,20 +504,20 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
-            
+
             $testData = [
                 'id' => 'TEST-PPID-001',
                 'nama_lengkap' => 'Budi Santoso Test',
             ];
-            
+
             $result = $fonteService->sendInformationRequestNotification($phone, $testData);
 
             if ($result['overall_success']) {
                 $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
                 $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
-                
+
                 $this->sendSuccessNotification("PPID Information Request Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
             } else {
                 $this->sendErrorNotification('❌ PPID Information Request test failed. Check your settings and try again.');
@@ -443,7 +531,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -452,20 +540,20 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
-            
+
             $testData = [
                 'id' => 'TEST-OBJECTION-001',
                 'nama_lengkap' => 'Siti Aminah Test',
             ];
-            
+
             $result = $fonteService->sendInformationObjectionNotification($phone, $testData);
 
             if ($result['overall_success']) {
                 $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
                 $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
-                
+
                 $this->sendSuccessNotification("PPID Information Objection Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
             } else {
                 $this->sendErrorNotification('❌ PPID Information Objection test failed. Check your settings and try again.');
@@ -479,7 +567,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -488,22 +576,22 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
-            
+
             $testData = [
                 'id' => 'TEST-ATHG-001',
                 'nama_lengkap' => 'Ahmad Rianto Test',
                 'bidang' => 'keamanan',
                 'tingkat_urgensi' => 'tinggi',
             ];
-            
+
             $result = $fonteService->sendATHGReportNotification($phone, $testData);
 
             if ($result['overall_success']) {
                 $userSuccess = $result['user']['success'] ? '✅ User' : '❌ User';
                 $adminSuccess = $result['admin']['success'] ? '✅ Admin' : '❌ Admin';
-                
+
                 $this->sendSuccessNotification("ATHG Service Test Results:\n{$userSuccess} notification\n{$adminSuccess} notification");
             } else {
                 $this->sendErrorNotification('❌ ATHG Service test failed. Check your settings and try again.');
@@ -517,7 +605,7 @@ class ManageWhatsApp extends SettingsPage
     {
         $data = $this->form->getState();
         $phone = $data['service_test_phone'] ?? $data['test_phone'] ?? null;
-        
+
         if (empty($phone)) {
             $this->sendErrorNotification('Please enter a phone number for service testing');
             return;
@@ -526,42 +614,62 @@ class ManageWhatsApp extends SettingsPage
         try {
             $settings = app(WhatsAppSettings::class);
             $settings->fill($data);
-            
+
             $fonteService = new FonteService();
             $results = [];
 
             // Test all services
             $services = [
-                'SKT' => [$fonteService, 'sendSKTNotification', [
-                    'id' => 'TEST-001',
-                    'nama_ormas' => 'ORMAS Test Kaltara',
-                    'jenis_permohonan' => 'pendaftaran',
-                ]],
-                'SKL' => [$fonteService, 'sendSKLNotification', [
-                    'id' => 'TEST-SKL-001',
-                    'nama_organisasi' => 'Organisasi Test Kaltara',
-                ]],
-                'PPID Request' => [$fonteService, 'sendInformationRequestNotification', [
-                    'id' => 'TEST-PPID-001',
-                    'nama_lengkap' => 'Budi Santoso Test',
-                ]],
-                'PPID Objection' => [$fonteService, 'sendInformationObjectionNotification', [
-                    'id' => 'TEST-OBJECTION-001',
-                    'nama_lengkap' => 'Siti Aminah Test',
-                ]],
-                'ATHG' => [$fonteService, 'sendATHGReportNotification', [
-                    'id' => 'TEST-ATHG-001',
-                    'nama_lengkap' => 'Ahmad Rianto Test',
-                    'bidang' => 'keamanan',
-                    'tingkat_urgensi' => 'tinggi',
-                ]],
+                'SKT' => [
+                    $fonteService,
+                    'sendSKTNotification',
+                    [
+                        'id' => 'TEST-001',
+                        'nama_ormas' => 'ORMAS Test Kaltara',
+                        'jenis_permohonan' => 'pendaftaran',
+                    ]
+                ],
+                'SKL' => [
+                    $fonteService,
+                    'sendSKLNotification',
+                    [
+                        'id' => 'TEST-SKL-001',
+                        'nama_organisasi' => 'Organisasi Test Kaltara',
+                    ]
+                ],
+                'PPID Request' => [
+                    $fonteService,
+                    'sendInformationRequestNotification',
+                    [
+                        'id' => 'TEST-PPID-001',
+                        'nama_lengkap' => 'Budi Santoso Test',
+                    ]
+                ],
+                'PPID Objection' => [
+                    $fonteService,
+                    'sendInformationObjectionNotification',
+                    [
+                        'id' => 'TEST-OBJECTION-001',
+                        'nama_lengkap' => 'Siti Aminah Test',
+                    ]
+                ],
+                'ATHG' => [
+                    $fonteService,
+                    'sendATHGReportNotification',
+                    [
+                        'id' => 'TEST-ATHG-001',
+                        'nama_lengkap' => 'Ahmad Rianto Test',
+                        'bidang' => 'keamanan',
+                        'tingkat_urgensi' => 'tinggi',
+                    ]
+                ],
             ];
 
             foreach ($services as $serviceName => [$service, $method, $testData]) {
                 try {
                     $result = $service->$method($phone, $testData);
                     $results[$serviceName] = $result['overall_success'];
-                    
+
                     // Small delay between messages
                     usleep(500000); // 0.5 seconds
                 } catch (\Exception $e) {
@@ -572,7 +680,7 @@ class ManageWhatsApp extends SettingsPage
             // Create summary
             $successCount = array_sum($results);
             $totalCount = count($results);
-            
+
             $summary = "🎯 All Services Test Results ({$successCount}/{$totalCount} passed):\n\n";
             foreach ($results as $service => $success) {
                 $icon = $success ? '✅' : '❌';

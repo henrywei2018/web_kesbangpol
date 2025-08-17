@@ -4,23 +4,28 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LaporATHGResource\Pages;
 use App\Models\LaporATHG;
+use App\Services\FonteService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Notification;
-use App\Services\FonteService;
 
 class LaporATHGResource extends Resource
 {
     protected static ?string $model = LaporATHG::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-exclamation';
-    protected static ?string $navigationLabel = 'ATHG Reports';
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationLabel = 'Reviu ATHG';
+    protected static ?string $navigationGroup = 'POKUS KALTARA';
     protected static ?int $navigationSort = 5;
+    public static function getSlug(): string
+    {
+        return 'athg';
+    }
 
     public static function form(Form $form): Form
     {
@@ -139,37 +144,25 @@ class LaporATHGResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('lapathg_id')
-                    ->label('Report ID')
+                    ->label('ID')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('user.username')
-                    ->label('Reporter')
+                    ->label('Pelapor')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('perihal')
-                    ->label('Subject')
+                    ->label('Perihal')
                     ->searchable()
                     ->limit(30),
 
                 Tables\Columns\TextColumn::make('bidang')
-                    ->label('Field')
+                    ->label('Bidang')
                     ->badge()
                     ->color(fn ($record) => $record->getBidangInfo()['color'] ?? 'gray')
                     ->formatStateUsing(fn ($record) => $record->getBidangInfo()['label'] ?? $record->bidang),
-
-                Tables\Columns\TextColumn::make('jenis_athg')
-                    ->label('Type')
-                    ->badge()
-                    ->color(fn ($record) => $record->getJenisInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getJenisInfo()['label'] ?? $record->jenis_athg),
-
-                Tables\Columns\TextColumn::make('tingkat_urgensi')
-                    ->label('Urgency')
-                    ->badge()
-                    ->color(fn ($record) => $record->getTingkatUrgensiInfo()['color'] ?? 'gray')
-                    ->formatStateUsing(fn ($record) => $record->getTingkatUrgensiInfo()['label'] ?? $record->tingkat_urgensi),
 
                 Tables\Columns\TextColumn::make('status_athg')
                     ->label('Status')
@@ -178,7 +171,7 @@ class LaporATHGResource extends Resource
                     ->formatStateUsing(fn ($record) => $record->getStatusInfo()['label'] ?? $record->status_athg),
 
                 Tables\Columns\TextColumn::make('tanggal')
-                    ->label('Incident Date')
+                    ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
 
@@ -193,12 +186,8 @@ class LaporATHGResource extends Resource
                     ->options(array_map(fn($option) => $option['label'], LaporATHG::getBidangOptions())),
 
                 Tables\Filters\SelectFilter::make('jenis_athg')
-                    ->label('ATHG Type')
+                    ->label('Jenis ATHG')
                     ->options(array_map(fn($option) => $option['label'], LaporATHG::getJenisATHGOptions())),
-
-                Tables\Filters\SelectFilter::make('tingkat_urgensi')
-                    ->label('Urgency Level')
-                    ->options(array_map(fn($option) => $option['label'], LaporATHG::getTingkatUrgensiOptions())),
 
                 Tables\Filters\SelectFilter::make('status_athg')
                     ->label('Status')
@@ -207,50 +196,45 @@ class LaporATHGResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('send_to_group')
-                ->label('Kirim ke Group')
-                ->icon('heroicon-o-chat-bubble-left-right')
-                ->color('info')
-                ->requiresConfirmation()
-                ->modalHeading('Kirim Notifikasi ke Group Admin')
-                ->modalDescription('Apakah Anda yakin ingin mengirim notifikasi ini ke group admin WhatsApp?')
-                ->action(function (LaporATHG $record) {
-                    $fonteService = app(FonteService::class);
-                    
-                    // Ambil group ID dari setting
-                    $groupId = $fonteService->getSetting('whatsapp.group_athg', '');
-                    
-                    // Buat pesan khusus untuk group
-                    $message = "🔔 *LAPORAN ATHG - POKUS KALTARA*\n\n" .
-                                "Ada data laporan ATHG terverifikasi yang perlu perhatian:\n\n" .
-                                "📋 *Detail:*\n" .
-                                "• ID ATHG: {$record->lapathg_id}\n" .
-                                "• Bidang: {$record->bidang}\n" .                                
-                                "• Perihal: {$record->perihal}\n\n" .
-                                
-                                "• Isi Informasi: {$record->detail_kejadian}\n" .
-                                "• Catatan: {$record->catatan_admin}\n" .
-                                "• Tanggal Veriikasi: " . $record->updated_at->format('d/m/Y H:i') . "\n\n" .
-                                "🚨 *PERHATIAN: Laporan ini bersifat rahasia dan harus ditangani sesuai prosedur*\n\n" .
-                                "Silakan cek panel admin untuk detail lengkap.";
-                    
-                    // Kirim ke group
-                    $result = $fonteService->sendGroupMessage($groupId, $message);
-                    
-                    if ($result['success']) {
-                        Notification::make()
-                            ->title('Berhasil')
-                            ->body('Notifikasi berhasil dikirim ke group admin')
-                            ->success()
-                            ->send();
-                    } else {
-                        Notification::make()
-                            ->title('Gagal')
-                            ->body('Gagal mengirim notifikasi: ' . ($result['error'] ?? 'Unknown error'))
-                            ->danger()
-                            ->send();
-                    }
-                }),
+                Tables\Actions\Action::make('send_to_athg_group')
+    ->label('Kirim ke Group')
+    ->icon('heroicon-o-exclamation-triangle')
+    ->color('warning')
+    ->requiresConfirmation()
+    ->modalHeading('Kirim Notifikasi ATHG ke Group')
+    ->modalDescription(fn ($record) => 
+        "Kirim notifikasi laporan ATHG ID: {$record->lapathg_id} - {$record->perihal} ke group WhatsApp?"
+    )
+    ->action(function ($record) {
+        $fonteService = app(FonteService::class);
+        
+        $result = $fonteService->sendATHGGroupNotification([
+            'id' => $record->id,
+            'lapathg_id' => $record->lapathg_id,
+            'bidang' => $record->bidang,
+            'jenis_athg' => $record->jenis_athg,
+            'perihal' => $record->perihal,
+            'lokasi' => $record->lokasi,
+            'status' => $record->status_athg,
+            'tanggal' => $record->created_at->format('d/m/Y H:i'),
+            'nama_pelapor' => $record->nama_pelapor,
+            // tingkat_urgensi DIHAPUS
+        ]);
+        
+        if ($result['success']) {
+            Notification::make()
+                ->title('Berhasil Terkirim')
+                ->body("Notifikasi ATHG berhasil dikirim ke group")
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Gagal Mengirim')
+                ->body('Error: ' . ($result['error'] ?? 'Unknown error'))
+                ->danger()
+                ->send();
+        }
+    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

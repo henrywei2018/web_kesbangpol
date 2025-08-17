@@ -9,7 +9,7 @@ use App\Models\KeberatanInformasiPublik;
 use App\Models\LaporATHG; 
 use App\Models\LaporGiat;
 use App\Services\FonteService;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; 
 
 class WhatsAppObserver
 {
