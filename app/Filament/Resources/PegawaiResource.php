@@ -78,6 +78,14 @@ class PegawaiResource extends Resource
                     $formattedNumber = self::formatPhoneNumber($state);
                     $set('kontak', $formattedNumber);
                     }),
+                Forms\Components\SpatieMediaLibraryFileUpload::make('pegawai_photo')
+                    ->collection('pegawai_photos')
+                    ->label('Foto Pegawai')
+                    ->image()                    
+                    ->directory('pegawai/photos')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png'])                    
+                    ->maxSize(2048)
+                    ->nullable(),
             ]);
     }
     
