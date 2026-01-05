@@ -1,0 +1,52 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Third Party Services
+    |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
+    */
+
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+        'scheme' => 'https',
+    ],
+    
+    'fonnte' => [
+        'api_url' => env('FONNTE_API_URL', 'https://api.fonnte.com/send'),
+        'token' => env('FONNTE_TOKEN','Xe4Lk949KbyD6TUmeVmx'),
+        'enabled' => env('FONNTE_ENABLED', true),
+        'admin_phones' => [
+        'main' => env('FONNTE_ADMIN_MAIN', '0851722207178'), // Main admin
+        'backup' => env('FONNTE_ADMIN_BACKUP', ''), // Backup admin (optional)
+        'skt_admin' => env('FONNTE_SKT_ADMIN', ''), // SKT specific admin (optional)
+        'skl_admin' => env('FONNTE_SKL_ADMIN', ''), // SKL specific admin (optional)
+        'ppid_admin' => env('FONNTE_PPID_ADMIN', ''), // PPID specific admin (optional)
+        'athg_admin' => env('FONNTE_ATHG_ADMIN', ''), // ATHG specific admin (optional)
+        ],
+    ],
+
+    'postmark' => [
+        'token' => env('POSTMARK_TOKEN'),
+    ],
+
+    'ses' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+    'turnstile' => [
+    'sitekey' => env('TURNSTILE_SITE_KEY'),
+    'secret' => env('TURNSTILE_SECRET_KEY'),
+],
+
+];
