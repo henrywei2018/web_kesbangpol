@@ -15,5 +15,26 @@ export default defineConfig({
     ],
     build: {
         outDir: 'public/build',
+        // Production optimizations
+        minify: 'esbuild',
+        sourcemap: false,
+        // Code splitting for better caching
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['axios'],
+                },
+                // Asset file naming for cache busting
+                chunkFileNames: 'js/[name]-[hash].js',
+                entryFileNames: 'js/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash].[ext]',
+            },
+        },
+        // Chunk size warnings
+        chunkSizeWarningLimit: 500,
+    },
+    // Optimize dependencies
+    optimizeDeps: {
+        include: ['axios'],
     },
 });

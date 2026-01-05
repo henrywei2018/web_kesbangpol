@@ -163,4 +163,9 @@ class PostResource extends Resource
     {
         return __("menu.nav_group.blog");
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['author', 'category']);
+    }
 }

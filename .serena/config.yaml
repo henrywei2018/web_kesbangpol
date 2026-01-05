@@ -1,0 +1,64 @@
+# Serena Configuration for Kesbangpol Kaltara
+
+project:
+  name: "Kesbangpol Kaltara Website"
+  description: "Government portal for Kesbangpol Kalimantan Utara Province"
+  language: "php"
+  framework: "laravel"
+
+# File patterns to include/exclude
+include:
+  - "app/**/*.php"
+  - "config/**/*.php"
+  - "database/**/*.php"
+  - "routes/**/*.php"
+  - "resources/views/**/*.blade.php"
+  - "resources/js/**/*.js"
+  - "resources/css/**/*.css"
+  - "tests/**/*.php"
+  - "composer.json"
+  - "package.json"
+
+exclude:
+  - "vendor/**"
+  - "node_modules/**"
+  - "storage/**"
+  - "bootstrap/cache/**"
+  - "public/build/**"
+  - "public/assets/vendor/**"
+  - ".git/**"
+  - "*.lock"
+
+# Important directories for context
+context_paths:
+  - "app/Filament"
+  - "app/Models"
+  - "app/Http/Controllers"
+  - "app/Services"
+  - "config"
+  - "routes"
+  - "database/migrations"
+
+# Code style preferences
+style:
+  indent: 4
+  quotes: "single"
+  line_length: 120
+  formatter: "pint"
+
+# Testing configuration
+testing:
+  framework: "phpunit"
+  command: "php artisan test"
+  directory: "tests"
+
+# Build commands
+commands:
+  dev: "php artisan serve"
+  build: "npm run build"
+  test: "php artisan test"
+  lint: "./vendor/bin/pint"
+  migrate: "php artisan migrate"
+  fresh: "php artisan migrate:fresh --seed"
+  cache: "php artisan optimize"
+  clear: "php artisan optimize:clear"

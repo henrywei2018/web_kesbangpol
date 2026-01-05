@@ -3,9 +3,16 @@ import preset from './vendor/filament/support/tailwind.config.preset'
 export default {
     presets: [preset],
     content: [
+        // Application views
+        './resources/views/**/*.blade.php',
+        './resources/js/**/*.js',
+        './resources/js/**/*.vue',
+        // Filament
         './app/Filament/**/*.php',
         './resources/views/filament/**/*.blade.php',
         './vendor/filament/**/*.blade.php',
+        // Livewire
+        './app/Livewire/**/*.php',
     ],
     safelist: [
         // Background colors
@@ -15,13 +22,13 @@ export default {
         'bg-yellow-600',
         'bg-gray-200',
         'bg-gray-700',
-        
+
         // Text colors
         'text-blue-100',
         'text-green-100',
         'text-red-100',
         'text-yellow-100',
-        
+
         // Utilities used in progress bar
         'w-full',
         'rounded-full',
@@ -30,7 +37,7 @@ export default {
         'text-center',
         'p-0.5',
         'leading-none',
-        
+
         // Dark mode
         'dark:bg-gray-700'
     ],

@@ -653,4 +653,9 @@ class OrmasMasterResource extends Resource
             OrmasMasterResource\Widgets\OrmasCategoryDistribution::class,
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['skt', 'skl']);
+    }
 }

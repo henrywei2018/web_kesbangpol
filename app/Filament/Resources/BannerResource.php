@@ -265,4 +265,9 @@ class BannerResource extends Resource
     {
         return 'Media';
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['category']);
+    }
 }

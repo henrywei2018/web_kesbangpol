@@ -195,4 +195,9 @@ class PublicationResource extends Resource
     {
         return auth()->user()->hasRole('super_admin');
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['category', 'subcategory']);
+    }
 }

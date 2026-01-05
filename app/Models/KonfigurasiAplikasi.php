@@ -14,7 +14,7 @@ class KonfigurasiAplikasi extends Model
 
     public function pengesah()
     {
-        return $this->belongsToMany('pengesah_spt_id');
+        return $this->belongsTo(Pegawai::class, 'pengesah_spt_id');
     }
 
     public function pa()

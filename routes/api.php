@@ -19,6 +19,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['prefix' => 'layanan'], function () {
-    Route::apiResource('posts', BlogPostController::class);
+// API routes with rate limiting (60 requests per minute)
+Route::middleware('throttle:60,1')->group(function () {
+    Route::group(['prefix' => 'layanan'], function () {
+        Route::apiResource('posts', BlogPostController::class);
+    });
 });

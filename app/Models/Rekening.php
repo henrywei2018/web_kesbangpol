@@ -34,7 +34,7 @@ class Rekening extends Model
 
     public function getCombinedLabelAttribute()
     {
-        $pegawaiName = $this->pegawai() ? $this->pegawai->nama_pegawai : 'Unknown';
+        $pegawaiName = $this->pegawai?->nama_pegawai ?? 'Unknown';
 
         return "{$this->nomor_rekening}-{$this->nama_rekening} - {$pegawaiName}";
     }

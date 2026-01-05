@@ -8,8 +8,9 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Models\SKTDocumentLabel;
 use App\Models\SKTDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia; 
+use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Traits\HasStatusUpdateNotifications;
 
 class SKT extends Model implements HasMedia
@@ -107,8 +108,10 @@ class SKT extends Model implements HasMedia
     }
     public function registerMediaCollections(): void
     {
-        // Retrieve document labels from the database
-        $sktdocumentLabels = SKTDocumentLabel::all();
+        // Retrieve document labels from cache to avoid N+1 queries
+        $sktdocumentLabels = Cache::remember('skt_document_labels', 3600, function () {
+            return SKTDocumentLabel::all();
+        });
 
         // Dynamically register each document as a media collection
         foreach ($sktdocumentLabels as $label) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use App\Models\PermohonanInformasiPublik;
 use App\Models\KeberatanInformasiPublik;
@@ -35,25 +36,27 @@ class AdminDashboardController extends Controller
 
     private function getOverviewStats(): array
     {
-        // Same logic as in AdminDashboard page
-        $totalUsers = User::count();
-        $totalPermohonan = PermohonanInformasiPublik::count();
-        $totalKeberatan = KeberatanInformasiPublik::count();
-        $totalSKT = SKT::count();
-        $totalATHG = LaporATHG::count();
+        // Cache dashboard stats for 5 minutes to reduce database load
+        return Cache::remember('admin_dashboard_overview_stats', 300, function () {
+            $totalUsers = User::count();
+            $totalPermohonan = PermohonanInformasiPublik::count();
+            $totalKeberatan = KeberatanInformasiPublik::count();
+            $totalSKT = SKT::count();
+            $totalATHG = LaporATHG::count();
 
-        $lastMonthUsers = User::where('created_at', '>=', now()->subMonth())->count();
-        $monthlyGrowth = $totalUsers > 0 ? ($lastMonthUsers / $totalUsers) * 100 : 0;
+            $lastMonthUsers = User::where('created_at', '>=', now()->subMonth())->count();
+            $monthlyGrowth = $totalUsers > 0 ? ($lastMonthUsers / $totalUsers) * 100 : 0;
 
-        return [
-            'totalUsers' => $totalUsers,
-            'totalPermohonan' => $totalPermohonan,
-            'totalKeberatan' => $totalKeberatan,
-            'totalSKT' => $totalSKT,
-            'totalATHG' => $totalATHG,
-            'monthlyGrowth' => round($monthlyGrowth, 1),
-            'pendingApprovals' => $this->getPendingApprovals(),
-        ];
+            return [
+                'totalUsers' => $totalUsers,
+                'totalPermohonan' => $totalPermohonan,
+                'totalKeberatan' => $totalKeberatan,
+                'totalSKT' => $totalSKT,
+                'totalATHG' => $totalATHG,
+                'monthlyGrowth' => round($monthlyGrowth, 1),
+                'pendingApprovals' => $this->getPendingApprovals(),
+            ];
+        });
     }
 
     // Add other private methods here...

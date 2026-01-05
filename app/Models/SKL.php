@@ -10,6 +10,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Models\DocumentLabel;
 use App\Models\SKLDocumentFeedback;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Traits\HasStatusUpdateNotifications;
 
 class SKL extends Model implements HasMedia
@@ -48,8 +49,10 @@ class SKL extends Model implements HasMedia
     }
     public function registerMediaCollections(): void
     {
-        // Retrieve document labels from the database
-        $documentLabels = DocumentLabel::all();
+        // Retrieve document labels from cache to avoid N+1 queries
+        $documentLabels = Cache::remember('skl_document_labels', 3600, function () {
+            return DocumentLabel::all();
+        });
 
         // Dynamically register each document as a media collection
         foreach ($documentLabels as $label) {
